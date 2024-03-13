@@ -1,0 +1,50 @@
+{
+    "widget": {
+        "name": "widget.name",
+        "description": "widget.description",
+        "short_description": "widget.short_description",
+        "version": "1.0.1",
+        "interface_version": 2,
+        "init_once": true,
+        "locale": [
+            "es"
+        ],
+        "installation": true,
+        "support": {
+            "link": "https://www.callpicker.com",
+            "email": "support@callpicker.com"
+        }
+    },
+    "locations":[
+		"ccard-1",
+		"clist-1",
+		"lcard-1",
+		"llist-1",
+		"cucard-1",
+		"culist-1",
+		"comcard-1",
+        "settings"
+	],
+    "settings": {
+        "cp_client_id": {
+            "name": "settings.cp_client_id",
+            "type": "text",
+            "required": true
+        },
+        "cp_client_secret": {
+            "name": "settings.cp_client_secret",
+            "type": "pass",
+            "required": true
+        },
+        "callpicker_block": {
+            "name": "settings.callpicker_block",
+            "type": "custom",
+            "required": false
+        },
+        "users_extensions": {
+            "name": "settings.users_extensions",
+            "type": "users",
+            "required": false
+        }
+    }
+}

@@ -1,0 +1,26 @@
+{
+    "widget": {
+        "name": "VoIP Callpicker 4.24",
+        "description": "Widget para integración métodos VoIP para manejo de llamadas Callpicker desde Kommo",
+        "short_description": "Integración manejo de llamadas Callpicker",
+        "call_action": "Llamada Callpicker"
+    },
+    "settings": {
+        "cp_client_id": "Callpicker Client ID",
+        "cp_client_secret": "Callpicker Client Secret",
+        "users_extensions": "Extensiones Callpicker, estos son los usuario kommo asociados con esta cuenta, agrega los IDs de las extensiones callpicker en el campo en blanco",
+        "kommo_secret_key": "Integration Secret Key",
+        "callpicker_block": "Bloque Callpicker"
+    },
+    "callpickerCodes": {
+        "cp_unexpected_error": "Error de Integración, por favor revisa que los datos solicitados sean correctos. 101",
+        "invalid_client": "Credenciales Callpicker Inválidas. 102",
+        "unauthorized_client": "Se requiere activar Dial API en cuenta Callpicker. 103",
+        "unexpected_amo_api_error": "Error al autorizar la integración de Kommo, se requiere desinstalar y volver a instalar integración. 104",
+        "amo_api_error": "Error al autorizar la integración de Kommo, se requiere desinstalar y eliminar para volver a intentar instalar integración. 105",
+        "kommo_auth_success": "Integración Callpicker instalada correctamente 😀"
+    },
+    "callpickerMessages": {
+        "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call"
+    }
+}
