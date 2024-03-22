@@ -1,10 +1,26 @@
 <style>
-    .cp-message {
-        text-shadow: 0.5px 0.5px 0 rgba(0,0,0,0.25);
+    .cp-responses-container {
+        display: flex;
+        align-items: center;
+        padding-top: 10px; 
+    }
+
+    .cp-responses-button {
+        padding: 5px 15px;
+        background-color: rgb(47, 150, 240);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .cp-responses-message {
+        text-shadow: 0.5px 0.5px 0 rgba(0, 0, 0, 0.25);
         color: darkgreen;
     }
 
     .invalid_client,
+    .invalid_request,
     .cp_unexpected_error,
     .amo_api_error,
     .unexpected_amo_api_error {
@@ -35,7 +51,8 @@
         }
     }
 </style>
-<div class="cp-message {{ className }}">
-    {{ message }}
+
+<div class="cp-responses-container">
+    <span id="cpResponsesMessage" class="cp-responses-message">
+    </span>
 </div>
-<hr />

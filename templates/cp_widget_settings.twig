@@ -1,0 +1,203 @@
+<style>
+    .cp-ctc-trunks {
+        padding: 5px;
+    }
+
+    .cp-ctc-tab-toggle,
+    .cp-ext-tab-toggle {
+        display: flex;
+        cursor: pointer;
+        color: blue;
+        text-decoration: underline;
+        border: none;
+        background: none;
+        padding: 0;
+        margin-top: 10px;
+    }
+
+    .cp-ext-tab-toggle {
+        margin-top: 0;
+        color: darkslategrey;
+    }
+
+    .cp-ctc-tab-toggle i {
+        width: 15px;
+        height: 15px;
+    }
+
+    .cp-ctc-tab-content,
+    .cp-ext-tab-content {
+        display: none;
+    }
+
+    .cp-ext-tab-content table {
+        border: 1px solid darkslategrey;
+        width: 280px;
+    }
+
+    .cp-ext-tab-content table td, 
+    .cp-ext-tab-content table th {
+        border: 1px solid darkslategrey;
+        padding: 3px;
+    }
+
+    .cp-ext-tab-content table th {
+        font-weight: bold;
+        background-color: aliceblue;
+    }
+
+    .cp-ctc-instructions {
+        padding: 10px;
+        font-size: 1.1rem;
+        font-style: italic;
+    }
+
+    .cp-ctc-show {
+        display: block;
+    }
+
+    .cp-ext-show {
+        display: flex;
+        justify-content: center;
+        padding-bottom: 10px;
+    }
+
+    .cp-ctc-input-wrapper {
+        display: flex;
+        align-items: center;
+        margin-left: 25px;
+        margin-bottom: 12px;
+    }
+
+    .cp-ctc-input-label {
+        margin-right: 10px;
+        width: 250px;
+    }
+
+    .cp-ctc-input-title {
+        font-size: 18px;
+        font-weight: bold;
+        display: block;
+    }
+
+    .cp-ctc-input-subtitle {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .cp-ctc-input {
+        width: 50px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .cp-ctc-ext-warn {
+        border: 1px solid goldenrod;
+    }
+
+    .cp-ctc-ext-warn-msg {
+        font-weight: bold;
+        color: darkgoldenrod;
+    }
+
+</style>
+<button class="cp-ext-tab-toggle">
+    📞 Extensiones Disponibles
+</button>
+<p class="cp-ext-tab-instruction">
+        Haz clic en el enlace para mostrar los Nombres y IDs de extensiones disponibles de la cuenta Callpicker.
+</p>
+<div class="cp-ext-tab-content">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <td>Nombre</th>
+                <td># Ext</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for extension in extensionsOptions %}
+            <tr>
+                <th>{{ extension.id }}</th>
+                <td>{{ extension.name }}</th>
+                <td>{{ extension.number }}</th>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<label for="nombre" class="cp-ctc-input-label">
+    <span class="cp-ctc-input-title">Troncal Preferida</span>
+    <span class="cp-ctc-input-subtitle">
+        Puedes seleccionar la troncal que callpicker utilizará para marcar al destino, si se selecciona "Ninguna"
+        callpicker utilizará el más adecuado
+    </span>
+</label>
+<div class="cp-ctc-trunks">
+    {% for trunk in trunksOptions %}
+    <label for="cp_ctc_{{trunk}}" class="control-radio__label" title="{{ trunk }}">
+        <div class="control-radio">
+            <input type="radio" name="ctc_trunk" id="cp_ctc_{{trunk}}" value="{{ trunk }}">
+            <div class="control-radio__helper"></div>
+        </div>
+        <span class="control-radio-label-text element__text">
+            {{ trunk }}
+        </span>
+    </label>
+    {% endfor %}
+    <label for="cp_ctc_nullTrunk" class="control-radio__label" title="null">
+        <div class="control-radio">
+            <input type="radio" name="ctc_trunk" id="cp_ctc_nullTrunk" value="null">
+            <div class="control-radio__helper"></div>
+        </div>
+        <span class="control-radio-label-text element__text">
+            Ninguna
+        </span>
+    </label>
+</div>
+<button class="cp-ctc-tab-toggle">
+    <i class="icon icon-amoforms-setting"></i>
+    Configuraciones Adicionales
+</button>
+<div class="cp-ctc-tab-content">
+    <p class="cp-ctc-instructions">
+        Estas configuraciones permiten comportamientos específicos para la funcionalidad
+        click-to-call
+    </p>
+    <div class="cp-ctc-input-wrapper">
+        <label for="nombre" class="cp-ctc-input-label">
+            <span class="cp-ctc-input-title">TTL</span>
+            <span class="cp-ctc-input-subtitle">
+                Número de intentos para reintentar una llamada.
+                (Valor default es 1 y el máximo permitido es 5)
+            </span>
+        </label>
+        <input name="ctc_ttl" type="number" min="1" max="5" value="1" class="cp-ctc-input" />
+    </div>
+    <div class="cp-ctc-input-wrapper">
+        <label for="nombre" class="cp-ctc-input-label">
+            <span class="cp-ctc-input-title">Period</span>
+            <span class="cp-ctc-input-subtitle">
+                Intervalo de tiempo en minutos para reintentar una llamada.
+                (Valor default es 1 y el máximo permitido es 10)
+            </span>
+        </label>
+        <input name="ctc_period" type="number" min="1" max="10" value="1" class="cp-ctc-input" />
+    </div>
+    <div class="cp-ctc-input-wrapper">
+        <label for="nombre" class="cp-ctc-input-label">
+            <span class="cp-ctc-input-title">Marcación Antibloqueo</span>
+            <span class="cp-ctc-input-subtitle">
+                (Valor default es 0 y se permite 1 o 2)
+                <ul>
+                    <li>Modo 0: Respeta la troncal </li>
+                    <li>Modo 1: Habilita troncal para dial</li>
+                    <li>Modo 2: Deshabilita troncal para dial</li>
+                </ul>
+            </span>
+        </label>
+        <input name="ctc_random" type="number" min="1" max="10" value="0" class="cp-ctc-input" />
+    </div>
+</div>
