@@ -10,18 +10,29 @@ define([
       WIDGET INFORMATION
     ------------------------------------*/
 
+    var version = 'v6.63'
+    console.log(`version: ${version}`)
     var self = this
+
+    /**
+     * TEST 
+     * https://connectors4.black.digitum.com.mx/amocrm/widget/install
+     * Callpicker
+     * Lab VoIP
+     * CP.CU.22224021.0e
+     * 326adfb76fee972d9fe3d6def2b50f4a
+     */
 
     /*------------------------------------
     WIDGET GENERAL CONSTANTS
     ------------------------------------*/
 
-    self.CP_WIDGET_HOST = 'https://connectors.callpicker.com/integrations/amocrm/widget'
+    self.CP_WIDGET_HOST = 'https://connectors4.black.digitum.com.mx/amocrm/widget'
     self.CP_WIDGET_TYPE = 'click_to_call'
     self.MODAL_HTML = '<span class="modal-body__close"><span class="icon icon-modal-close"></span></span>'
 
     self.WIDGET_CP = {
-      API_HOST: "https://api.callpicker.com",
+      API_HOST: "https://black.digitum.com.mx/eduardo/callpicker_api/develop/",
       API_SCOPE: "calls",
       CODES: {
         SUCCESS: 200,
