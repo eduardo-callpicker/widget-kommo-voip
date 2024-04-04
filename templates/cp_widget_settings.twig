@@ -7,7 +7,7 @@
     .cp-ext-tab-toggle {
         display: flex;
         cursor: pointer;
-        color: blue;
+        color: cornflowerblue;
         text-decoration: underline;
         border: none;
         background: none;
@@ -17,7 +17,7 @@
 
     .cp-ext-tab-toggle {
         margin-top: 0;
-        color: darkslategrey;
+        color: darkcyan;
     }
 
     .cp-ctc-tab-toggle i {
@@ -43,7 +43,7 @@
 
     .cp-ext-tab-content table th {
         font-weight: bold;
-        background-color: aliceblue;
+        background-color: azure;
     }
 
     .cp-ctc-instructions {
@@ -101,7 +101,45 @@
         color: darkgoldenrod;
     }
 
+    .cp-ext-tab-instruction {
+        margin-bottom: 30px;
+    }
+
+    .cp-settings-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.2);
+        z-index: 9999;
+        display: none;
+    }
+
+    .cp-settings-overlay .cp-settings-spinner {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: cp-settings-spin 0.8s linear infinite;
+    }
+
+    @keyframes cp-settings-spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
 </style>
+
 <button class="cp-ext-tab-toggle">
     📞 Extensiones Disponibles
 </button>
@@ -137,19 +175,24 @@
 </label>
 <div class="cp-ctc-trunks">
     {% for trunk in trunksOptions %}
-    <label for="cp_ctc_{{trunk}}" class="control-radio__label" title="{{ trunk }}">
-        <div class="control-radio">
-            <input type="radio" name="ctc_trunk" id="cp_ctc_{{trunk}}" value="{{ trunk }}">
-            <div class="control-radio__helper"></div>
-        </div>
-        <span class="control-radio-label-text element__text">
-            {{ trunk }}
-        </span>
-    </label>
+        {% if selectedTrunk == trunk %}
+            {% set checked = 'checked' %}
+        {% else %}
+            {% set checked = '' %}
+        {% endif %}
+        <label for="cp_ctc_{{trunk}}" class="control-radio__label" title="{{ trunk }}">
+            <div class="control-radio">
+                <input type="radio" name="ctc_trunk" id="cp_ctc_{{trunk}}" value="{{ trunk }}" {{ checked }}>
+                <div class="control-radio__helper"></div>
+            </div>
+            <span class="control-radio-label-text element__text">
+                {{ trunk }}
+            </span>
+        </label>
     {% endfor %}
     <label for="cp_ctc_nullTrunk" class="control-radio__label" title="null">
         <div class="control-radio">
-            <input type="radio" name="ctc_trunk" id="cp_ctc_nullTrunk" value="null">
+            <input type="radio" name="ctc_trunk" id="cp_ctc_nullTrunk" value="null" {% if selectedTrunk == 'null' %} checked {% endif %}>
             <div class="control-radio__helper"></div>
         </div>
         <span class="control-radio-label-text element__text">
@@ -174,7 +217,7 @@
                 (Valor default es 1 y el máximo permitido es 5)
             </span>
         </label>
-        <input name="ctc_ttl" type="number" min="1" max="5" value="1" class="cp-ctc-input" />
+        <input name="ctc_ttl" type="number" min="1" max="5" class="cp-ctc-input" value="{{ ttlValue }}" />
     </div>
     <div class="cp-ctc-input-wrapper">
         <label for="nombre" class="cp-ctc-input-label">
@@ -184,20 +227,24 @@
                 (Valor default es 1 y el máximo permitido es 10)
             </span>
         </label>
-        <input name="ctc_period" type="number" min="1" max="10" value="1" class="cp-ctc-input" />
+        <input name="ctc_period" type="number" min="1" max="10" class="cp-ctc-input" value="{{ periodValue }}"/>
     </div>
     <div class="cp-ctc-input-wrapper">
         <label for="nombre" class="cp-ctc-input-label">
-            <span class="cp-ctc-input-title">Marcación Antibloqueo</span>
-            <span class="cp-ctc-input-subtitle">
+            <span class="cp-ctc-input-title">Random Caller ID</span>
+            <div class="cp-ctc-input-subtitle">
+                Gestiona el comportamiento de la marcación
                 (Valor default es 0 y se permite 1 o 2)
                 <ul>
-                    <li>Modo 0: Respeta la troncal </li>
-                    <li>Modo 1: Habilita troncal para dial</li>
-                    <li>Modo 2: Deshabilita troncal para dial</li>
+                    <li>Modo 0: Mantiene el esquema normal de marcación</li>
+                    <li>Modo 1: Habilita un marcador aleatorio para cualquier destino</li>
+                    <li>Modo 2: Deshabilita el marcador para cualquier destino</li>
                 </ul>
-            </span>
+                <div style="display:block; margin-top: 5px;">
+                    <a href="https://api.callpicker.com/docs/dial.html#operation/dial">Documentación del API de Dial</a>
+                </div>
+            </div>
         </label>
-        <input name="ctc_random" type="number" min="1" max="10" value="0" class="cp-ctc-input" />
+        <input name="ctc_random" type="number" min="0" max="2" class="cp-ctc-input" value="{{ randomValue }}"/>
     </div>
 </div>

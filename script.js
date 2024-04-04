@@ -10,27 +10,40 @@ define([
       WIDGET INFORMATION
     ------------------------------------*/
 
-    var version = 'v5.90'
-    console.log(`version: ${version}`)
     var self = this
 
-    /**
-     * TEST 
-     * https://connectors4.black.digitum.com.mx/amocrm/widget/install
-     * Callpicker
-     * Lab VoIP
-     * CP.CU.22224021.0e
-     * 326adfb76fee972d9fe3d6def2b50f4a
-     */
-
     /*------------------------------------
-      WIDGET CONSTANTS
+    WIDGET GENERAL CONSTANTS
     ------------------------------------*/
 
-    //#to-do: Change to official connectors domain
-    self.CP_WIDGET_HOST = 'https://connectors4.black.digitum.com.mx/amocrm/widget'
+    self.CP_WIDGET_HOST = 'https://connectors.callpicker.com/integrations/amocrm/widget'
     self.CP_WIDGET_TYPE = 'click_to_call'
     self.MODAL_HTML = '<span class="modal-body__close"><span class="icon icon-modal-close"></span></span>'
+
+    self.WIDGET_CP = {
+      API_HOST: "https://api.callpicker.com",
+      API_SCOPE: "calls",
+      CODES: {
+        SUCCESS: 200,
+      },
+      CONNECTORS_PROPS: {
+        KOMMO_CODE: 'kommo_code',
+        KOMMO_CONFIGURATION: 'kommo_configuration'
+      },
+      CONFIGURATIONS_CODES: {
+        PAYLOAD: 'payload',
+        DESTINATIONS: 'destinations',
+        EXTENSION: 'Extension',
+        TRUNKS: 'telephone_numbers'
+      }
+    }
+
+    self.CP_WIDGET_PARAMS = {
+      "ctc_trunk": "null",
+      "ctc_ttl": "1",
+      "ctc_period": "1",
+      "ctc_random": "0"
+    }
 
     /*------------------------------------
       WIDGET DICTIONARIES
@@ -48,7 +61,9 @@ define([
     }
 
     self.WIDGET_I18N = {
-      SETTINGS: 'settings'
+      SETTINGS: 'settings',
+      CP_CODES: 'callpickerCodes',
+      CP_MESSAGES: 'callpickerMessages',
     }
 
     self.WIDGET_TWIGS = {
@@ -73,36 +88,6 @@ define([
 
     self.WIDGET_DOM_CLASSES = {
       RESPONSES_MESSAGE: 'cp-responses-message'
-    }
-
-    //#to-do: Change to official api domain
-    self.WIDGET_CP = {
-      API_HOST: "https://black.digitum.com.mx/eduardo/callpicker_api/develop/",
-      API_SCOPE: "calls",
-      CODES: {
-        SUCCESS: 200,
-      },
-      CONNECTORS_PROPS: {
-        KOMMO_CODE: 'kommo_code',
-        KOMMO_CONFIGURATION: 'kommo_configuration'
-      },
-      CONFIGURATIONS_CODES: {
-        PAYLOAD: 'payload',
-        DESTINATIONS: 'destinations',
-        EXTENSION: 'Extension',
-        TRUNKS: 'telephone_numbers'
-      }
-    }
-
-    /*------------------------------------
-      WIDGET PARAMS (CLICK-TO-CALL)
-    ------------------------------------*/
-
-    self.CP_CTC_PARAMS = {
-      "ctc_trunk": "null",
-      "ctc_ttl": "1",
-      "ctc_period": "1",
-      "ctc_random": "0"
     }
 
     /*------------------------------------
@@ -132,59 +117,54 @@ define([
      * 
      */
     self.getCallpickerCode = function (code) {
-      const callpickerCodes = self.i18n('callpickerCodes')
-      return callpickerCodes[code] ?? callpickerCodes['unexpected_error']
+      const cpCodes = self.i18n(self.WIDGET_I18N.CP_CODES)
+      return cpCodes[code] ?? cpCodes['cp_unexpected_error']
     }
 
     /**
-     * setClickToCallValues
-     * 
-     * Update Click-to-Call default params,
-     * every time the widget is opened to edit its settings
+     * getCallpickerMessages
+     *  
+     * Get message based on a message code
      * 
      */
-    self.setClickToCallValues = function () {
-      try {
-        const ctcValue = $('input[name="' +
-          self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
-          .val()
+    self.getCallpickerMessages = function (messageCode) {
+      const cpMessages = self.i18n(self.WIDGET_I18N.CP_MESSAGES)
+      return cpMessages[messageCode]
+    }
 
-        const jsonValues = JSON.parse(ctcValue)
 
-        Object.assign(self.CP_CTC_PARAMS, jsonValues);
+    /**
+     * getCTCValues
+     * 
+     * Get Click-To-Call params values
+     * 
+     * params:
+     *  - Preferred trunk
+     *  - TTL
+     *  - Period
+     *  - Random Caller ID
+     * 
+     */
+    self.getCTCValues = function () {
+      const ctcValues = $('input[name="' +
+        self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+        .val()
 
-        console.log('setClickToCallValues.jsonValues', jsonValues)
-        console.log('setClickToCallValues.CP_CTC_PARAMS', self.CP_CTC_PARAMS)
-
-        $('input[name="' +
-          self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
-          .val(JSON.stringify(self.CP_CTC_PARAMS))
-
-        $('input[name="' +
-          self.WIDGET_FIELDS.CP_CTC_TRUNK + '"][value="' +
-          self.CP_CTC_PARAMS.ctc_trunk + '"]')
-          .prop('checked', true)
-
-        $('input[name="' +
-          self.WIDGET_FIELDS.CP_CTC_TTL + '"]')
-          .val(self.CP_CTC_PARAMS.ctc_ttl)
-
-        $('input[name="' +
-          self.WIDGET_FIELDS.CP_CTC_PERIOD + '"]')
-          .val(self.CP_CTC_PARAMS.ctc_period)
-
-        $('input[name="' +
-          self.WIDGET_FIELDS.CP_CTC_RANDOM + '"]')
-          .val(self.CP_CTC_PARAMS.ctc_random)
-
-      } catch {
-        $('input[name="' +
-          self.WIDGET_FIELDS.CP_CTC_TRUNK + '"][value="null"]')
-          .prop('checked', true)
-        return
+      if (ctcValues !== '') {
+        return JSON.parse(ctcValues)
+      } else {
+        return self.CP_WIDGET_PARAMS
       }
     }
 
+    /**
+     * Modal Warning Builder
+     * 
+     * Template for Warning Modal
+     * 
+     * @param {*} message : Modal message
+     * @returns 
+     */
     self.modalWarningBuilder = function (message) {
       return `
           <div>
@@ -198,6 +178,14 @@ define([
       `
     }
 
+    /**
+     * Modal Error Builder
+     * 
+     * Template for Warning Modal
+     * 
+     * @param {*} message 
+     * @returns 
+     */
     self.modalErrorBuilder = function (message) {
       return `
           <div>
@@ -269,6 +257,7 @@ define([
 
     }
 
+
     /**
      * setTitleUserExtensions: Change title format for
      * user extensions input/s
@@ -320,80 +309,17 @@ define([
     ------------------------------------*/
 
     /**
-     * showWarningExtensionsModal
+     * showWarningModal
      * 
      * Shows a message alert, when an extension ID does not match
      * with the availables
      */
-    self.showWarningExtensionsModal = function () {
+    self.showWarningModal = function (messageCode) {
 
-      const message = "Para una mejor experiencia agrega un ID de extensión disponible de tu cuenta Callpicker"
+      const message = self.getCallpickerMessages(messageCode)
       const modalData = self.modalWarningBuilder(message)
 
-      new Modal({
-        class_name: 'modal-window',
-        init: function ($modal_body) {
-          var $this = $(this);
-          $modal_body
-            .trigger('modal:loaded') // launches a modal window
-            .html(modalData)
-            .trigger('modal:centrify')  // configures the modal window
-            .append(self.MODAL_HTML);
-        },
-        destroy: function () {
-        }
-      });
-    }
-
-    /**
-     * showWarningExtensionsRecommendation
-     * 
-     * Shows a recommendation alert, after widget installation
-     */
-    self.showWarningExtensionsRecommendation = function () {
-
-      const message = "Para una mejor experiencia agrega los Extension ID disponibles de tu cuenta Callpicker en la sección \"Extensiones Callpicker\""
-      const modalData = self.modalWarningBuilder(message)
-
-      new Modal({
-        class_name: 'modal-window',
-        init: function ($modal_body) {
-          var $this = $(this);
-          $modal_body
-            .trigger('modal:loaded') // launches a modal window
-            .html(modalData)
-            .trigger('modal:centrify')  // configures the modal window
-            .append(self.MODAL_HTML);
-        },
-        destroy: function () {
-        }
-      });
-    }
-
-    /**
-     * showWarningExtensionsModal
-     * 
-     * Shows a message alert, when an extension ID does not match
-     * with the availables
-     */
-    self.showWarningExtensionsNotFound = function () {
-
-      const message = "La extensión no es válida, revisa la configuración de la Integración"
-      const modalData = self.modalWarningBuilder(message)
-
-      new Modal({
-        class_name: 'modal-window',
-        init: function ($modal_body) {
-          var $this = $(this);
-          $modal_body
-            .trigger('modal:loaded') // launches a modal window
-            .html(modalData)
-            .trigger('modal:centrify')  // configures the modal window
-            .append(self.MODAL_HTML);
-        },
-        destroy: function () {
-        }
-      });
+      self.renderBasicModal(modalData)
     }
 
     /**
@@ -402,24 +328,12 @@ define([
      * Shows a message alert, when an extension ID does not match
      * with the availables
      */
-    self.showErrorClickToCall = function () {
+    self.showErrorModal = function (messageCode) {
 
-      const message = "La extensión no es válida, revisa la configuración de la Integración"
+      const message = self.getCallpickerMessages(messageCode)
       const modalData = self.modalErrorBuilder(message)
 
-      new Modal({
-        class_name: 'modal-window',
-        init: function ($modal_body) {
-          var $this = $(this);
-          $modal_body
-            .trigger('modal:loaded') // launches a modal window
-            .html(modalData)
-            .trigger('modal:centrify')  // configures the modal window
-            .append(self.MODAL_HTML);
-        },
-        destroy: function () {
-        }
-      });
+      self.renderBasicModal(modalData)
     }
 
     /**
@@ -429,10 +343,14 @@ define([
      * @param {*} number 
      */
     self.outgoingCallNotification = function (number) {
+
+      const title = self.getCallpickerMessages('ctc_notification_header')
+      const body = self.getCallpickerMessages('ctc_notification_body')
+
       var notification = {
         text: {
-          header: "Llamada Saliente Callpicker",
-          text: `Marcando número ${number}`
+          header: title,
+          text: `${body} ${number}`
         },
         type: "call"
       };
@@ -444,10 +362,17 @@ define([
     ------------------------------------*/
 
     /**
-     * handlerToggleResponsesSpinner: Handler for show/hide repsonses spinner 
+     * showResponsesSpinner: Handler for show/hide repsonses spinner 
      */
-    self.handlerToggleResponsesSpinner = function () {
-      $(this.WIDGET_DOM_IDs.RESPONSES_MESSAGE).toggleClass('spinner');
+    self.showResponsesSpinner = function () {
+      $(this.WIDGET_DOM_IDs.RESPONSES_MESSAGE).addClass('cp-spinner');
+    }
+
+    /**
+     * hideResponsesSpinner: Handler for show/hide repsonses spinner 
+     */
+    self.hideResponsesSpinner = function () {
+      $(this.WIDGET_DOM_IDs.RESPONSES_MESSAGE).removeClass('cp-spinner');
     }
 
     /**
@@ -480,7 +405,7 @@ define([
     ------------------------------------*/
 
     /**
-     * Callpicker Render Login
+     * Callpicker Widget Responses Container
      */
     self.renderWidgetResponses = function () {
       self.getTemplate(
@@ -498,132 +423,160 @@ define([
     }
 
     /**
+     * Render Kommo Modal
+     */
+    self.renderBasicModal = function (modalData) {
+      new Modal({
+        class_name: 'modal-window',
+        init: function ($modal_body) {
+          var $this = $(this);
+          $modal_body
+            .trigger('modal:loaded') // launches a modal window
+            .html(modalData)
+            .trigger('modal:centrify')  // configures the modal window
+            .append(self.MODAL_HTML);
+        },
+        destroy: function () {
+        }
+      });
+    }
+
+    /**
      * Callpicker Render Click-To-Call Settings
      */
     self.renderWidgetSettings = function (configuration) {
+ 
+      // Get available trunks from configuration response
+      const trunksOptions = configuration[
+        self.WIDGET_CP.CONFIGURATIONS_CODES.PAYLOAD][
+        self.WIDGET_CP.CONFIGURATIONS_CODES.TRUNKS
+      ]
 
-      if (configuration['code'] != self.WIDGET_CP.CODES.SUCCESS) {
-        // Unsatisfactory Configurations
-        $(this.WIDGET_DOM_IDs.RESPONSES_MESSAGE).empty();
-        $(self.WIDGET_DOM_IDs.RESPONSES_MESSAGE).addClass(configuration.error)
-        $(self.WIDGET_DOM_IDs.RESPONSES_MESSAGE).text(configuration.message)
+      // Get available extensions from configuration response
+      const extensionsOptions = configuration[
+        self.WIDGET_CP.CONFIGURATIONS_CODES.PAYLOAD][
+        self.WIDGET_CP.CONFIGURATIONS_CODES.DESTINATIONS][
+        self.WIDGET_CP.CONFIGURATIONS_CODES.EXTENSION
+      ]
 
-      }
-      else {
-        // Successful Configurations 
-
-        // Get available trunks from configuration response
-        const trunksOptions = configuration[
-          self.WIDGET_CP.CONFIGURATIONS_CODES.PAYLOAD][
-          self.WIDGET_CP.CONFIGURATIONS_CODES.TRUNKS
-        ]
-
-        // Get available extensions from configuration response
-        const extensionsOptions = configuration[
-          self.WIDGET_CP.CONFIGURATIONS_CODES.PAYLOAD][
-          self.WIDGET_CP.CONFIGURATIONS_CODES.DESTINATIONS][
-          self.WIDGET_CP.CONFIGURATIONS_CODES.EXTENSION
-        ]
-
-        // Render Click-to-call Settings Template
-        self.getTemplate(
-          self.WIDGET_TWIGS.CP_WIDGET_SETTINGS,
-          function (template) {
-            const container = $('input[name="' +
-              self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
-              .closest('.widget_settings_block__item_field')
+      // Render Click-to-call Settings Template
+      self.getTemplate(
+        self.WIDGET_TWIGS.CP_WIDGET_SETTINGS,
+        function (template) {
+          const container = $('input[name="' +
+            self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+            .closest('.widget_settings_block__item_field')
 
 
-            container.show()
-            container.append(
-              template.render({
-                trunksOptions: trunksOptions,
-                extensionsOptions: extensionsOptions
-              })
-            )
+          const ctcValues = self.getCTCValues()
 
-            // Validate JSON from click-to-call
-            self.setClickToCallValues()
-
-            // Listener event-click for toggle (view) available extensions
-            $(".cp-ext-tab-toggle").click(function () {
-              $(".cp-ext-tab-content").toggleClass("cp-ext-show");
+          container.show()
+          container.append(
+            template.render({
+              trunksOptions: trunksOptions,
+              extensionsOptions: extensionsOptions,
+              selectedTrunk: ctcValues[self.WIDGET_FIELDS.CP_CTC_TRUNK],
+              ttlValue: ctcValues[self.WIDGET_FIELDS.CP_CTC_TTL],
+              periodValue: ctcValues[self.WIDGET_FIELDS.CP_CTC_PERIOD],
+              randomValue: ctcValues[self.WIDGET_FIELDS.CP_CTC_RANDOM]
             })
+          )
 
-            // Listener event-click for toggle (view) special configurations
-            $(".cp-ctc-tab-toggle").click(function () {
-              $(".cp-ctc-tab-content").toggleClass("cp-ctc-show");
-            })
+          // Listener event-click for toggle (view) available extensions
+          $(".cp-ext-tab-toggle").click(function () {
+            $(".cp-ext-tab-content").toggleClass("cp-ext-show");
+          })
 
-            // Event listener for inputs
-            $('.cp-ctc-tab-content input').on('input', function () {
-              // input name
-              const inputName = $(this).attr('name');
+          // Listener event-click for toggle (view) special configurations
+          $(".cp-ctc-tab-toggle").click(function () {
+            $(".cp-ctc-tab-content").toggleClass("cp-ctc-show");
+          })
 
-              let inputValue = parseInt($(this).val());
+          // Event listener for inputs
+          $('.cp-ctc-tab-content input').on('input', function () {
 
-              if (inputValue <= 0 && inputName != 'ctc_random') {
+            // input props
+            const inputName = $(this).attr('name');
+            let inputValue = $(this).val();
+
+            // ctc actual values
+            let ctcValues = self.getCTCValues()
+
+            if (inputValue <= 0) {
+              if (inputName === self.WIDGET_FIELDS.CP_CTC_RANDOM) {
+                inputValue = 0
+              } else {
                 inputValue = 1
               }
+            }
 
-              if (inputName == 'ctc_ttl' && inputValue > 5) {
-                inputValue = 5
-              }
+            if (inputName == self.WIDGET_FIELDS.CP_CTC_TTL && inputValue > 5) {
+              inputValue = 5
+            }
 
-              if (inputName == 'ctc_period' && inputValue > 10) {
-                inputValue = 10
-              }
+            if (inputName == self.WIDGET_FIELDS.CP_CTC_PERIOD && inputValue > 10) {
+              inputValue = 10
+            }
 
-              if (inputName == 'ctc_random' && inputValue > 2) {
-                inputValue = 2
-              }
+            if (inputName == self.WIDGET_FIELDS.CP_CTC_RANDOM && inputValue > 2) {
+              inputValue = 2
+            }
 
-              $(this).val(inputValue.toString())
-              self.CP_CTC_PARAMS[inputName] = inputValue.toString()
+            $(this).val(inputValue)
+            ctcValues[inputName] = inputValue.toString()
 
-              $('input[name="' +
-                self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
-                .val(JSON.stringify(self.CP_CTC_PARAMS))
+            $('input[name="' +
+              self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+              .val(JSON.stringify(ctcValues))
+            $('input[name="' +
+              self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+              .trigger('change')
 
-            })
+            $(this).blur()
 
-            $('input[name="ctc_trunk"]').change(function () {
-              // Obtener el valor del radio button seleccionado
-              const inputName = $(this).attr('name');
-              const selectedTrunk = $(this).val();
+          })
 
-              self.CP_CTC_PARAMS[inputName] = selectedTrunk
+          $('input[name="ctc_trunk"]').change(function () {
+            // Obtener el valor del radio button seleccionado
+            const inputName = $(this).attr('name');
+            const selectedTrunk = $(this).val();
 
-              $('input[name="' +
-                self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
-                .val(JSON.stringify(self.CP_CTC_PARAMS))
-            });
+            const ctcValues = self.getCTCValues()
 
-            $('input[name^="' +
-              self.WIDGET_FIELDS.CP_USERS_EXTENSIONS + '["]')
-              .on('focusout', function () {
-                const valorIngresado = $(this).val().trim()
+            ctcValues[inputName] = selectedTrunk
 
-                const resultFound = extensionsOptions.some(function (ext) {
-                  return ext.id === valorIngresado
-                })
+            $('input[name="' +
+              self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+              .trigger('change')
+            $('input[name="' +
+              self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+              .val(JSON.stringify(ctcValues))
+          });
 
-                if (!resultFound) {
+          $('input[name^="' +
+            self.WIDGET_FIELDS.CP_USERS_EXTENSIONS + '["]')
+            .on('focusout', function () {
+              const valorIngresado = $(this).val().trim()
 
-                  self.showWarningExtensionsModal()
-
-                } else {
-                  $(this).removeClass('cp-ctc-ext-warn');
-                  $(this).next('.cp-ctc-ext-warn-msg').remove();
-                }
+              const resultFound = extensionsOptions.some(function (ext) {
+                return ext.id === valorIngresado
               })
-          }
-        )
-      }
+
+              if (!resultFound) {
+
+                self.showWarningModal('extensions_id_not_match')
+
+              } else {
+                $(this).removeClass('cp-ctc-ext-warn');
+                $(this).next('.cp-ctc-ext-warn-msg').remove();
+              }
+            })
+        }
+      )
     }
 
     /*------------------------------------
-      WIDGET PROMISES 
+      WIDGET PROMISES / SERVICES
     ------------------------------------*/
 
     /**
@@ -659,15 +612,15 @@ define([
             },
             function (response) {
 
-              kommoCode = response[
+              const kommoCode = response[
                 self.WIDGET_CP.CONNECTORS_PROPS.KOMMO_CODE
               ]
 
-              configurationResult = response[
+              const configurationResult = response[
                 self.WIDGET_CP.CONNECTORS_PROPS.KOMMO_CONFIGURATION
               ]
 
-              const message = self.getCallpickerCode(
+              const message = self.getCallpickerMessages(
                 kommoCode
               )
 
@@ -683,7 +636,6 @@ define([
                 resolve(
                   {
                     success: false,
-                    className: kommoCode,
                     message: message
                   }
                 )
@@ -691,11 +643,17 @@ define([
             },
             'json'
           )
-        } catch {
+        } catch (error) {
+
+          const message = self.getCallpickerCode(
+            'cp_unexpected_error'
+          )
+
+          console.error('Callpicker VOIP: ', error)
+
           resolve(
             {
               success: false,
-              className: 'cp_unexpected_error',
               message: message
             }
           )
@@ -737,52 +695,91 @@ define([
               })
             } else {
 
+              const kommoCode = response[
+                self.WIDGET_CP.CONNECTORS_PROPS.KOMMO_CODE
+              ]
+
+              const message = self.getCallpickerCode(
+                kommoCode
+              )
+
+              self.showErrorModal(message)
+              console.error(response)
+
               resolve({
-                success: false,
-                configuration: configurationResult
+                success: false
               })
             }
           },
           'json',
-          function (err) {
-            console.log('err', err)
+          function (error) {
+            console.error('Callpicker VOIP: ', error)
+
             resolve(false)
           }
         )
       });
     }
 
+    /**
+     * Click to Call Service
+     * 
+     * Call the Callpicker Service
+     * to do a click-to-call 
+     * 
+     * @param {*} cpExtensionID 
+     * @param {*} phoneToDial 
+     * @returns 
+     */
     self.clickToCallService = function (
       cpExtensionID,
       phoneToDial
     ) {
       return new Promise(function (resolve, reject) {
 
-        console.log('widgetSettings-params', self.params.cp_widget_settings)
-        const ctcParams = JSON.parse(ctcValue)
+        let ctcParams = {}
 
-        console.log('widgetSettings-params', ctcParams)
+        try {
+          ctcParams = JSON.parse(self.params.cp_widget_settings)
+        } catch {
+          ctcParams = self.params.cp_widget_settings
+        }
+
+        const payload = {
+          cp_client_id: self.params.cp_client_id,
+          cp_extension_id: cpExtensionID,
+          phone_to_dial: phoneToDial,
+          cp_api_host: self.WIDGET_CP.API_HOST,
+          ttl: ctcParams.ctc_ttl,
+          random_caller_id: ctcParams.ctc_random,
+          period: ctcParams.ctc_period
+        }
+
+
+        if (ctcParams.ctc_trunk !== 'null') {
+          payload.preferred_trunk = ctcParams.ctc_trunk
+        }
 
         self.crm_post(
           self.WIDGET_CP_ENDPOINTS.CLICK_TO_CALL,
-          {
-            cp_client_id: self.params.cp_client_id,
-            cp_extension_id: cpExtensionID,
-            phone_to_dial: phoneToDial,
-            cp_api_host: self.WIDGET_CP.API_HOST,
-          },
+          payload,
           function (response) {
+
             if (response.code
               ==
               self.WIDGET_CP.CODES.SUCCESS) {
               resolve(true)
             } else {
+
+              console.error(response)
+
               resolve(false)
             }
           },
           'json',
-          function (err) {
-            console.log('err', err)
+          function (error) {
+            console.error('Callpicker VOIP: ', error)
+
             resolve(false)
           }
         )
@@ -814,8 +811,8 @@ define([
         // Clean Error Message
         $(this.WIDGET_DOM_IDs.RESPONSES_MESSAGE).empty();
 
-        // Show Loader
-        self.handlerToggleResponsesSpinner()
+        // Loading Spinner
+        self.showResponsesSpinner()
 
         // Execute Service 
         const resultInstallation = await self.installationService()
@@ -824,6 +821,7 @@ define([
 
           // Show Success Installation Message
           self.lockCallpickerKeyFields()
+
           $(self.WIDGET_DOM_IDs.RESPONSES_MESSAGE)
             .text(resultInstallation.message)
           self.setSettingsFormats()
@@ -831,22 +829,25 @@ define([
 
           // Render Configuration Widget with Callpicker-Configuration Data
           self.renderWidgetSettings(resultInstallation.configuration)
-          self.showWarningExtensionsRecommendation()
+
+          // Validate JSON from click-to-call
+          // self.setClickToCallValues()
+
+          // self.showWarningExtensionsRecommendation()
+          self.showWarningModal('extensions_ids_recommendation')
 
         } else {
-
           // Error Logic
-          $(self.WIDGET_DOM_IDs.RESPONSES_MESSAGE).addClass(resultInstallation.className)
           $(self.WIDGET_DOM_IDs.RESPONSES_MESSAGE).text(resultInstallation.message)
         }
+
+        // Remove Spinner
+        self.hideResponsesSpinner()
 
         return resultInstallation.success
 
       } catch (error) {
         console.error('CP-Widget Error: ', error)
-      } finally {
-        // Hide Loader
-        self.handlerToggleResponsesSpinner()
       }
     }
 
@@ -868,12 +869,12 @@ define([
         // Clean Error Message
         $(this.WIDGET_DOM_IDs.RESPONSES_MESSAGE).empty();
 
+        // Loading Spinner
+        self.showResponsesSpinner()
+
         // Lock keys
         self.lockCallpickerKeyFields()
 
-
-        // Show Loader
-        self.handlerToggleResponsesSpinner()
 
         // Execute Configuration Service
         //      Get Click-To-Call Configuration
@@ -887,25 +888,22 @@ define([
           self.renderWidgetSettings(resultConfiguration.configuration)
 
         } else {
-          self.renderWidgetSettings(resultConfiguration.configuration)
           self.handlerToggleExtensionsCallpicker(false)
         }
+
+        // Remove Spinner
+        self.hideResponsesSpinner()
 
         return resultConfiguration.success
 
       } catch (error) {
         console.error('CP-Widget Error: ', error)
-      } finally {
-        // Hide Loader
-        self.handlerToggleResponsesSpinner()
       }
     }
 
     /**
      * widgetClickToCall
      */
-    // self.widgetClickToCall = async function (customerPhone) {
-    // }
 
     /*------------------------------------
       WIDGET CALLBACKS 
@@ -924,7 +922,8 @@ define([
           const extensionResult = self.searchUserCallpickerExtension(kommoUserID)
 
           if (extensionResult === false) {
-            self.showWarningExtensionsNotFound()
+            // self.showWarningExtensionsNotFound()
+            self.showWarningModal('ctc_empty_extension')
             return
           }
 
@@ -932,7 +931,7 @@ define([
           result = await self.clickToCallService(extensionResult, data.value)
 
           if (!result) {
-            self.showErrorClickToCall()
+            self.showErrorModal('ctc_unexpected_error')
           }
         })
 
@@ -941,24 +940,39 @@ define([
       bind_actions: function () {
         return true
       },
-      settings: function () {
+      settings: async function ($modal_body) {
         self.handlerToggleExtensionsCallpicker(false)
         self.renderWidgetResponses()
 
-        if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
-          self.widgetConfiguration()
+        if (self.params.status == self.WIDGET_STATUS.INSTALL) {
+          $('input[name="' +
+            self.WIDGET_FIELDS.CP_WIDGET_SETTINGS + '"]')
+            .val(JSON.stringify(self.getCTCValues()))
         }
+
+        if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
+          await self.widgetConfiguration()
+        }
+
         return true
       },
       onSave: async function () {
         if (self.params.status === self.WIDGET_STATUS.INSTALL) {
 
-          return self.widgetAuthorization()
+
+          const resultAuthorization = await self.widgetAuthorization()
+
+          return resultAuthorization
         }
-        return true
+
+        if (self.params.status === self.WIDGET_STATUS.INSTALLED) {
+          return true
+        }
+
+        return false
+
       },
       destroy: function () {
-
       }
     }
     return this

@@ -1,8 +1,8 @@
 {
     "widget": {
-        "name": "VoIP Callpicker 4.24",
-        "description": "Widget para integración métodos VoIP para manejo de llamadas Callpicker desde Kommo",
-        "short_description": "Integración manejo de llamadas Callpicker",
+        "name": "Callpicker VOIP",
+        "description": "Widget para integración métodos VoIP para manejo de llamadas (Click-to-Call) con Callpicker desde Kommo",
+        "short_description": "Integración Click-to-Call",
         "call_action": "Llamada Callpicker"
     },
     "settings": {
@@ -13,14 +13,23 @@
         "cp_widget_settings": "Configuraciones para funcionalidad Click to Call"
     },
     "callpickerCodes": {
-        "cp_unexpected_error": "Intenta de nuevo o consulta a soporte Callpicker",
-        "invalid_client": "Credenciales Callpicker Inválidas",
-        "unauthorized_client": "Se requiere activar Acceso a API y/o Dial API en cuenta Callpicker",
-        "unexpected_amo_api_error": "Error al autorizar la integración de Kommo, se requiere desinstalar y volver a instalar integración",
-        "amo_api_error": "Error al autorizar la integración de Kommo, se requiere eliminar y volver a intentar instalar integración",
-        "kommo_auth_success": "Integración Callpicker instalada correctamente ✅"
+        "kommo_auth_success": " ✅ Integración Callpicker instalada correctamente",
+        "unauthorized_client": "⚠️ Se requiere activar Acceso a API y/o Dial API en cuenta Callpicker",
+        "ctc_bad_request": "⚠️ Verifique las configuraciones de la integración Click-to-Call o consulte a soporte Callpicker",
+        "ctc_bad_conflict": "⚠️ Se requiere activar Acceso a API y/o Dial API en cuenta Callpicker o consulte a soporte Callpicker",
+        "cp_unexpected_error": "❌ Intenta de nuevo o consulte a soporte Callpicker",
+        "invalid_client": "❌ Credenciales Callpicker Inválidas",
+        "unexpected_amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere desinstalar y volver a instalar integración",
+        "amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere eliminar y volver a intentar instalar integración"
     },
     "callpickerMessages": {
-        "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call"
+        "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call",
+        "extensions_id_not_match": "Para una mejor experiencia agrega un ID de extensión disponible de tu cuenta Callpicker",
+        "extensions_ids_recommendation": "Para una mejor experiencia configura ID disponibles de tu cuenta Callpicker en la sección \"Extensiones Callpicker\"",
+        "configurations_error": "Error al cargar las configuraciones, revise los accesos de su cuenta Callpicker o consulte a soporte Callpicker",
+        "ctc_empty_extension": "La extensión no es válida, revise la configuración de la Integración",
+        "ctc_unexpected_error": "Error inesperado al intentar realizar llamada, revise la configuración de la Integración y/o consulte a soporte",
+        "ctc_notification_header": "Llamada Saliente Callpicker",
+        "ctc_notification_body": "Marcando número"
     }
 }
