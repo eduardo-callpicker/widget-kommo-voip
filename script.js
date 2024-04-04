@@ -32,7 +32,7 @@ define([
     self.MODAL_HTML = '<span class="modal-body__close"><span class="icon icon-modal-close"></span></span>'
 
     self.WIDGET_CP = {
-      API_HOST: "https://black.digitum.com.mx/eduardo/callpicker_api/develop/",
+      API_HOST: "https://black.digitum.com.mx/eduardo/callpicker_api/develop",
       API_SCOPE: "calls",
       CODES: {
         SUCCESS: 200,
