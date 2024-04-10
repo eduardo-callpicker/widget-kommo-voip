@@ -20,7 +20,7 @@
         "cp_unexpected_error": "❌ Intenta de nuevo o consulte a soporte Callpicker",
         "invalid_client": "❌ Credenciales Callpicker Inválidas",
         "unexpected_amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere desinstalar y volver a instalar integración",
-        "amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere eliminar y volver a intentar instalar integración"
+        "amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere eliminar integración creada y volver a intentar instalar integración"
     },
     "callpickerMessages": {
         "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call",

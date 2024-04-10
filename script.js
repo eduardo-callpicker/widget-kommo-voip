@@ -21,6 +21,10 @@ define([
      * Lab VoIP
      * CP.CU.22224021.0e
      * 326adfb76fee972d9fe3d6def2b50f4a
+     * 
+     * G-TEST
+     * CP.CU.27880.e93ad
+     * b15ef4e8207de8f040feebc02fe6e12b
      */
 
     /*------------------------------------
@@ -631,7 +635,7 @@ define([
                 self.WIDGET_CP.CONNECTORS_PROPS.KOMMO_CONFIGURATION
               ]
 
-              const message = self.getCallpickerMessages(
+              const message = self.getCallpickerCode(
                 kommoCode
               )
 
