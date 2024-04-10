@@ -10,7 +10,7 @@ define([
       WIDGET INFORMATION
     ------------------------------------*/
 
-    var version = 'v6.64'
+    var version = 'v6.65'
     console.log(`version: ${version}`)
     var self = this
 
