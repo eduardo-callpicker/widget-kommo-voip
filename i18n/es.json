@@ -28,7 +28,8 @@
         "extensions_ids_recommendation": "Para una mejor experiencia configura ID disponibles de tu cuenta Callpicker en la sección \"Extensiones Callpicker\"",
         "configurations_error": "Error al cargar las configuraciones, revise los accesos de su cuenta Callpicker o consulte a soporte Callpicker",
         "ctc_empty_extension": "La extensión no es válida, revise la configuración de la Integración",
-        "ctc_unexpected_error": "Error inesperado al intentar realizar llamada, revise la configuración de la Integración y/o consulte a soporte",
+        "ctc_unexpected_error": "Favor revisar la configuración de la Integración. Si continua teniendo problemas, intente consulte con soporte",
+        "ctc_invalid_phone_destination": "Asegúrese que el número de teléfono _ destino sea válido. Si continua teniendo problemas, intente consulte con soporte",
         "ctc_notification_header": "Llamada Saliente Callpicker",
         "ctc_notification_body": "Marcando número"
     }

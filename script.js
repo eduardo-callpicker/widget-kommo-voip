@@ -10,7 +10,7 @@ define([
       WIDGET INFORMATION
     ------------------------------------*/
 
-    var version = 'v6.65'
+    var version = 'v6.69'
     console.log(`version: ${version}`)
     var self = this
 
@@ -40,6 +40,7 @@ define([
       API_SCOPE: "calls",
       CODES: {
         SUCCESS: 200,
+        CONFLICT: 400
       },
       CONNECTORS_PROPS: {
         KOMMO_CODE: 'kommo_code',
@@ -97,6 +98,11 @@ define([
       INSTALLED: 'installed',
     }
 
+    self.WIDGET_CTC_CODES = {
+      INVALID_PHONE: 'ctc_invalid_phone_destination',
+      UNEXCPETED_ERROR: 'ctc_unexpected_error'
+    }
+
     self.WIDGET_DOM_IDs = {
       RESPONSES_MESSAGE: '#cpResponsesMessage'
     }
@@ -106,7 +112,7 @@ define([
     }
 
     /*------------------------------------
-      START: WIDGET GENERAL METHODS
+      # WIDGET GENERAL METHODS
     ------------------------------------*/
 
     /**
@@ -169,6 +175,25 @@ define([
         return JSON.parse(ctcValues)
       } else {
         return self.CP_WIDGET_PARAMS
+      }
+    }
+
+    /**
+     * sanitizePhone
+     * 
+     * Obtain a valid format for click-to-call
+     * @param {*} phone 
+     * @returns 
+     */
+    self.sanitizePhone = function (phone) {
+      let phoneFormat = phone.replace(/\D/g, '')
+
+      if (phoneFormat.length > 10) {
+          let phoneCode = phoneFormat.slice(0, -10)
+          let phoneNumber = phoneFormat.slice(-10)
+          return `+${phoneCode}${phoneNumber}`
+      } else {
+          return phoneFormat
       }
     }
 
@@ -320,7 +345,7 @@ define([
     }
 
     /*------------------------------------
-      WIDGET MODALS/NOTIFICATIONS
+      # WIDGET MODALS/NOTIFICATIONS
     ------------------------------------*/
 
     /**
@@ -343,9 +368,14 @@ define([
      * Shows a message alert, when an extension ID does not match
      * with the availables
      */
-    self.showErrorModal = function (messageCode) {
+    self.showErrorModal = function (messageCode, extra=[]) {
 
-      const message = self.getCallpickerMessages(messageCode)
+      let message = self.getCallpickerMessages(messageCode)
+
+      for (var i = 0; i < extra.length; i++) {
+        message = message.replace('_', extra[i]) 
+      }
+
       const modalData = self.modalErrorBuilder(message)
 
       self.renderBasicModal(modalData)
@@ -591,7 +621,7 @@ define([
     }
 
     /*------------------------------------
-      WIDGET PROMISES / SERVICES
+      # WIDGET SERVICES
     ------------------------------------*/
 
     /**
@@ -783,12 +813,21 @@ define([
             if (response.code
               ==
               self.WIDGET_CP.CODES.SUCCESS) {
-              resolve(true)
+              resolve({ passed: true })
             } else {
 
               console.error(response)
 
-              resolve(false)
+              const result = { 
+                passed: false, 
+                codeMessage: self.WIDGET_CTC_CODES.UNEXCPETED_ERROR 
+              }
+
+              if (response.code == self.WIDGET_CP.CODES.CONFLICT) {
+                result.codeMessage = self.WIDGET_CTC_CODES.INVALID_PHONE
+              }
+
+              resolve(result)
             }
           },
           'json',
@@ -921,7 +960,7 @@ define([
      */
 
     /*------------------------------------
-      WIDGET CALLBACKS 
+      # WIDGET CALLBACKS 
     ------------------------------------*/
 
     this.callbacks = {
@@ -931,6 +970,7 @@ define([
       init: function () {
 
         self.add_action('phone', async function (data) {
+          const phoneFormat = self.sanitizePhone(data.value)
 
           const kommoUserID = self.system().amouser_id
 
@@ -943,10 +983,10 @@ define([
           }
 
           self.outgoingCallNotification(data.value)
-          result = await self.clickToCallService(extensionResult, data.value)
-
-          if (!result) {
-            self.showErrorModal('ctc_unexpected_error')
+          result = await self.clickToCallService(extensionResult, phoneFormat)
+          
+          if (!result.passed) {
+            self.showErrorModal(result.codeMessage, [data.value])
           }
         })
 
