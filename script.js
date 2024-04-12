@@ -10,7 +10,7 @@ define([
       WIDGET INFORMATION
     ------------------------------------*/
 
-    var version = 'v6.69'
+    var version = 'v6.70'
     console.log(`version: ${version}`)
     var self = this
 
@@ -744,7 +744,7 @@ define([
                 self.WIDGET_CP.CONNECTORS_PROPS.KOMMO_CODE
               ]
 
-              const message = self.getCallpickerCode(
+              const message = self.getCallpickerMessages(
                 kommoCode
               )
 
