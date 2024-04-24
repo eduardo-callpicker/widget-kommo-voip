@@ -10,7 +10,7 @@ define([
       WIDGET INFORMATION
     ------------------------------------*/
 
-    var version = 'v6.70'
+    var version = 'v6.79'
     console.log(`version: ${version}`)
     var self = this
 
@@ -100,7 +100,8 @@ define([
 
     self.WIDGET_CTC_CODES = {
       INVALID_PHONE: 'ctc_invalid_phone_destination',
-      UNEXCPETED_ERROR: 'ctc_unexpected_error'
+      INVALID_EXTENSION: 'ctc_invalid_origin_extension',
+      UNEXPECTED_ERROR: 'ctc_unexpected_error'
     }
 
     self.WIDGET_DOM_IDs = {
@@ -186,15 +187,7 @@ define([
      * @returns 
      */
     self.sanitizePhone = function (phone) {
-      let phoneFormat = phone.replace(/\D/g, '')
-
-      if (phoneFormat.length > 10) {
-          let phoneCode = phoneFormat.slice(0, -10)
-          let phoneNumber = phoneFormat.slice(-10)
-          return `+${phoneCode}${phoneNumber}`
-      } else {
-          return phoneFormat
-      }
+      return phone.replace(/[ -]/g, '')
     }
 
     /**
@@ -603,6 +596,8 @@ define([
             .on('focusout', function () {
               const valorIngresado = $(this).val().trim()
 
+              if (valorIngresado === '') return
+
               const resultFound = extensionsOptions.some(function (ext) {
                 return ext.id === valorIngresado
               })
@@ -610,10 +605,10 @@ define([
               if (!resultFound) {
 
                 self.showWarningModal('extensions_id_not_match')
+                $(this).val('')
 
               } else {
-                $(this).removeClass('cp-ctc-ext-warn');
-                $(this).next('.cp-ctc-ext-warn-msg').remove();
+                $(this).val(valorIngresado)
               }
             })
         }
@@ -744,11 +739,7 @@ define([
                 self.WIDGET_CP.CONNECTORS_PROPS.KOMMO_CODE
               ]
 
-              const message = self.getCallpickerMessages(
-                kommoCode
-              )
-
-              self.showErrorModal(message)
+              self.showErrorModal(kommoCode)
               console.error(response)
 
               resolve({
@@ -759,8 +750,6 @@ define([
           'json',
           function (error) {
             console.error('Callpicker VOIP: ', error)
-
-            resolve(false)
           }
         )
       });
@@ -820,11 +809,20 @@ define([
 
               const result = { 
                 passed: false, 
-                codeMessage: self.WIDGET_CTC_CODES.UNEXCPETED_ERROR 
+                codeMessage: self.WIDGET_CTC_CODES.UNEXPECTED_ERROR,
+                extra: []
               }
 
               if (response.code == self.WIDGET_CP.CODES.CONFLICT) {
-                result.codeMessage = self.WIDGET_CTC_CODES.INVALID_PHONE
+
+                if (response.errors[0].hasOwnProperty('first_call')) {
+                  result.codeMessage = self.WIDGET_CTC_CODES.INVALID_EXTENSION
+                  result.extra.push(cpExtensionID)
+                } 
+                else if (response.errors[0].hasOwnProperty('second_call')) {                    
+                  result.codeMessage = self.WIDGET_CTC_CODES.INVALID_PHONE
+                  result.extra.push(phoneToDial)
+                }
               }
 
               resolve(result)
@@ -982,11 +980,16 @@ define([
             return
           }
 
-          self.outgoingCallNotification(data.value)
           result = await self.clickToCallService(extensionResult, phoneFormat)
+
+          // Llamada exítosa 200
+          if (result.passed) {
+            self.outgoingCallNotification(data.value)
+          }
           
+          // Llamada sin éxito
           if (!result.passed) {
-            self.showErrorModal(result.codeMessage, [data.value])
+            self.showErrorModal(result.codeMessage, result.extra)
           }
         })
 

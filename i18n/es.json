@@ -14,22 +14,22 @@
     },
     "callpickerCodes": {
         "kommo_auth_success": " ✅ Integración Callpicker instalada correctamente",
-        "unauthorized_client": "⚠️ Se requiere activar Acceso a API y/o Dial API en cuenta Callpicker",
-        "ctc_bad_request": "⚠️ Verifique las configuraciones de la integración Click-to-Call o consulte a soporte Callpicker",
-        "ctc_bad_conflict": "⚠️ Se requiere activar Acceso a API y/o Dial API en cuenta Callpicker o consulte a soporte Callpicker",
+        "unauthorized_client": "⚠️ El acceso a la API de Callpicker está limitado. Contacte a soporte Callpicker para solicitar que se active el acceso a la API de marcación de Callpicker (Dial API)",
+        "ctc_bad_conflict": "⚠️ El acceso a la API de Callpicker está limitado. Contacte a soporte Callpicker para solicitar que se active el acceso a la API de marcación de Callpicker (Dial API)",
         "cp_unexpected_error": "❌ Intenta de nuevo o consulte a soporte Callpicker",
         "invalid_client": "❌ Credenciales Callpicker Inválidas",
-        "unexpected_amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere desinstalar y volver a instalar integración",
-        "amo_api_error": "❌ Error al autorizar la integración de Kommo, se requiere eliminar integración creada y volver a intentar instalar integración"
+        "unexpected_amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles.",
+        "amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles."
     },
     "callpickerMessages": {
         "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call",
-        "extensions_id_not_match": "Para una mejor experiencia agrega un ID de extensión disponible de tu cuenta Callpicker",
-        "extensions_ids_recommendation": "Para una mejor experiencia configura ID disponibles de tu cuenta Callpicker en la sección \"Extensiones Callpicker\"",
-        "configurations_error": "Error al cargar las configuraciones, revise los accesos de su cuenta Callpicker o consulte a soporte Callpicker",
-        "ctc_empty_extension": "La extensión no es válida, revise la configuración de la Integración",
-        "ctc_unexpected_error": "Favor revisar la configuración de la Integración. Si continua teniendo problemas, intente consulte con soporte",
-        "ctc_invalid_phone_destination": "Asegúrese que el número de teléfono _ destino sea válido. Si continua teniendo problemas, intente consulte con soporte",
+        "extensions_id_not_match": "Revisa que el ID de extensión Callpicker ingresado sea uno válido de tu cuenta",
+        "extensions_ids_recommendation": "Te recomendamos configurar el ID de extensión a todos tus usuarios de Kommo para garantizar el funcionamiento de la integración.",
+        "configurations_error": "Error al consultar las extensiones de tu cuenta Callpicker. Consulte la documentación de Callpicker para más detalles.",
+        "ctc_empty_extension": "No se ha configurado un ID de extensión Callpicker para el usuario en sesión. Actualice la configuración de la integración e intente de nuevo.",
+        "ctc_unexpected_error": "Ha ocurrido un error inesperado al enlazar la llamada, intente de nuevo. Si el problema persiste, contacte a soporte Callpicker",
+        "ctc_invalid_phone_destination": "Asegúrese que el número de teléfono _ destino tenga un formato de teléfono válido. El teléfono no debe contener caracteres alfabéticos ni caracteres especiales.",
+        "ctc_invalid_origin_extension": "Asegúrese que el ID de extensión _ asociado al usuario en sesión sea correcto. Si el problema persiste, contacte a soporte Callpicker.",
         "ctc_notification_header": "Llamada Saliente Callpicker",
         "ctc_notification_body": "Marcando número"
     }
