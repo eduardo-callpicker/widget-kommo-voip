@@ -31,6 +31,8 @@
         "ctc_invalid_phone_destination": "Asegúrese que el número de teléfono _ destino tenga un formato de teléfono válido. El teléfono no debe contener caracteres alfabéticos ni caracteres especiales.",
         "ctc_invalid_origin_extension": "Asegúrese que el ID de extensión _ asociado al usuario en sesión sea correcto. Si el problema persiste, contacte a soporte Callpicker.",
         "ctc_notification_header": "Llamada Saliente Callpicker",
-        "ctc_notification_body": "Marcando número"
+        "ctc_notification_body": "Marcando número",
+        "ctc_empty_sip_credentials": "Ha ocurrido un error al autenticar la extensión para recepción de llamadas, por favor recargue la página. Si el problema persiste comuníquese con soporte de Callpicker",
+        "ctc_unespected_api_error": "Ha ocurrido un error inesperado al obtener las credenciales de la extensión" 
     }
 }

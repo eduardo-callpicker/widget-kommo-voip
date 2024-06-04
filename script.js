@@ -1,10 +1,17 @@
 define([
   'jquery',
   'underscore',
-  'lib/components/base/modal'
-], function ($, _, Modal) {
+  'lib/components/base/modal',
+  './js/localstorage-service.js',
+  './js/connectors-service.js',
+  './js/voip-service.js'
+], function ($, _, Modal, LocalStorageService, ConnectorsService, VoipService) {
 
   var CustomWidget = function () {
+    /*------------------------------------
+      Set Context on ConnectorsService
+     -------------------------------------*/
+     ConnectorsService.CONTEXT = this
 
     /*------------------------------------
       WIDGET INFORMATION
@@ -16,12 +23,12 @@ define([
     WIDGET GENERAL CONSTANTS
     ------------------------------------*/
 
-    self.CP_WIDGET_HOST = 'https://connectors.callpicker.com/integrations/amocrm/widget'
+    self.CP_WIDGET_HOST = 'https://connectors6.black.digitum.com.mx/amocrm/widget'
     self.CP_WIDGET_TYPE = 'click_to_call'
     self.MODAL_HTML = '<span class="modal-body__close"><span class="icon icon-modal-close"></span></span>'
 
     self.WIDGET_CP = {
-      API_HOST: "https://api.callpicker.com",
+      API_HOST: "https://black.digitum.com.mx/jafet/callpicker_api/api_develop",
       API_SCOPE: "calls",
       CODES: {
         SUCCESS: 200,
@@ -44,6 +51,11 @@ define([
       "ctc_ttl": "1",
       "ctc_period": "1",
       "ctc_random": "0"
+    }
+
+    self.STORAGE_KEYS = {
+      CP_API_CREDENTIALS: 'callpicker.api.credentials',
+      CP_EXTENSION_SIP_CREDENTIALS: 'callpicker.extensionsip.credentials'
     }
 
     /*------------------------------------
@@ -939,6 +951,80 @@ define([
     }
 
     /**
+     * Stores Callpicker API credentials on local storage
+     */
+    self.storeCallpickerApiCredentials = function() {
+      const credentials = {
+        client_id: $(`input[name="${self.WIDGET_FIELDS.CP_CLIENT_ID}"]`).val(),
+        client_secret: $(`input[name="${self.WIDGET_FIELDS.CP_CLIENT_SECRET}"]`).val()
+      }
+
+      if(LocalStorageService.exists(self.STORAGE_KEYS.CP_API_CREDENTIALS)) {
+        LocalStorageService.update(self.STORAGE_KEYS.CP_API_CREDENTIALS, credentials)
+        return
+      }
+
+      LocalStorageService.set(self.STORAGE_KEYS.CP_API_CREDENTIALS, credentials)
+    }
+
+    /**
+     * Get Callpicker SIP credentials form ConnectorsService
+     * 
+     * @returns {JSON|null}
+     */
+    self.getCallpickerExtensionSipCredentials = async function() {
+      const kommoUserId = self.system().amouser_id
+      const extensionId = self.searchUserCallpickerExtension(kommoUserId)
+      let userExtensionSipCredentials = null
+
+      if (extensionId === false) {
+        self.showWarningModal('ctc_empty_extension')
+        return userExtensionSipCredentials
+      }
+
+      if(LocalStorageService.exists(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)) {
+        userExtensionSipCredentials = LocalStorageService.get(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)
+      } else {
+        const payload = {
+          cp_extension_id: extensionId,
+          cp_client_id: self.params.cp_client_id,
+          cp_client_secret: self.params.cp_client_secret
+        }
+
+        try {
+          userExtensionSipCredentials = await ConnectorsService.getExtensionSipCredentials(payload);
+
+          LocalStorageService.set(
+            self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS,
+            userExtensionSipCredentials
+          )
+        } catch (error) {
+          if (error.message) {
+            const modalData = self.modalWarningBuilder(error.message)
+            self.renderBasicModal(modalData)
+          } else {
+            self.showWarningModal('ctc_unespected_api_error')
+          }
+        }
+      }
+      // TODO: Remove this
+      console.log(userExtensionSipCredentials)
+      return userExtensionSipCredentials
+    }
+
+    /**
+     * Get SIP credentials for current user on sesion and try to create SIP Agent 
+     */
+    self.createUserAgent = async function() {
+      userExtensionSipCredentials = self.getCallpickerExtensionSipCredentials()
+
+      if(userExtensionSipCredentials === null) {
+        self.showWarningModal('ctc_empty_sip_credentials')
+        return
+      }
+    }
+
+    /**
      * widgetClickToCall
      */
 
@@ -978,6 +1064,11 @@ define([
           }
         })
 
+        // TODO: Validate if inbout calls function was enabled before this
+        if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
+          self.createUserAgent()
+        }
+
         return true
       },
       bind_actions: function () {
@@ -1001,9 +1092,9 @@ define([
       },
       onSave: async function () {
         if (self.params.status === self.WIDGET_STATUS.INSTALL) {
-
-
           const resultAuthorization = await self.widgetAuthorization()
+
+          self.storeCallpickerApiCredentials()
 
           return resultAuthorization
         }
