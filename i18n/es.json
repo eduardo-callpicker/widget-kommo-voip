@@ -32,7 +32,8 @@
         "ctc_invalid_origin_extension": "Asegúrese que el ID de extensión _ asociado al usuario en sesión sea correcto. Si el problema persiste, contacte a soporte Callpicker.",
         "ctc_notification_header": "Llamada Saliente Callpicker",
         "ctc_notification_body": "Marcando número",
-        "ctc_empty_sip_credentials": "Ha ocurrido un error al autenticar la extensión para recepción de llamadas, por favor recargue la página. Si el problema persiste comuníquese con soporte de Callpicker",
-        "ctc_unespected_api_error": "Ha ocurrido un error inesperado al obtener las credenciales de la extensión" 
+        "voip_empty_sip_credentials": "Ha ocurrido un error al autenticar la extensión para recepción de llamadas, por favor recargue la página. Si el problema persiste comuníquese con soporte de Callpicker",
+        "voip_unespected_api_error": "Ha ocurrido un error inesperado al obtener las credenciales de la extensión. Verifique que la configuración de extensiones sea correcta.",
+        "voip_register_failed": "Error inesperado al conectarse al servidor de voz, recargue la página. Si el problema persiste, contacte a soporte Callpicker."
     }
 }

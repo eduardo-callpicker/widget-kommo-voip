@@ -12,6 +12,8 @@ define([
       Set Context on ConnectorsService
      -------------------------------------*/
      ConnectorsService.CONTEXT = this
+     VoipService.context = this
+     VoipService.sipUserName = this.system().kommouser
 
     /*------------------------------------
       WIDGET INFORMATION
@@ -1003,7 +1005,7 @@ define([
             const modalData = self.modalWarningBuilder(error.message)
             self.renderBasicModal(modalData)
           } else {
-            self.showWarningModal('ctc_unespected_api_error')
+            self.showWarningModal('voip_unespected_api_error')
           }
         }
       }
@@ -1016,12 +1018,14 @@ define([
      * Get SIP credentials for current user on sesion and try to create SIP Agent 
      */
     self.createUserAgent = async function() {
-      userExtensionSipCredentials = self.getCallpickerExtensionSipCredentials()
+      userExtensionSipCredentials = await self.getCallpickerExtensionSipCredentials()
 
       if(userExtensionSipCredentials === null) {
-        self.showWarningModal('ctc_empty_sip_credentials')
+        self.showWarningModal('voip_empty_sip_credentials')
         return
       }
+
+      VoipService.createUserAgent(userExtensionSipCredentials)
     }
 
     /**
