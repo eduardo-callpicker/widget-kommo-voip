@@ -1,38 +1,97 @@
 define([
     'https://connectors6.black.digitum.com.mx/static/amo/sip.min.js'
 ], function (SIP) {
+	/**
+     * Service for handling VOIP functions, using SIP.js as core library.
+     * @see {@link https://sipjs.com/guides/|SIP.js Documentation}
+     * @class
+     */
 	const VoipService = function () {
         const self = this
 
+		/**
+         * It expects to be Widget context, it must be initialized with the service
+         * @type {CustomWidget|null}
+         */
 		this.context = null
 
+		/**
+		 * WebSocket URL, used to stabilish connection with the VOIP core
+		 * @type {string}
+		 */
 		this.wssServer = 'webrtcdev.callpicker.com'
-		this.serverPath = '/ws'
-		this.webSocketPort = 443
-		this.profileName = 'Jafet Osorio'
-		this.sipUserName = ''
-		this.sipPassword = ''
-		this.transportReconnectionAttempts = 99
-		this.registerExpires = 300
-		this.userAgent = null
-		this.registererOptions = { 
-			expires: this.registerExpires
-		}
 
 		/**
-		 * This is the main function, create a User SIP Agent
+         * The path to the WebSocket server.
+         * @type {string}
+         */
+        this.serverPath = '/ws';
+
+        /**
+         * The port for the WebSocket connection.
+         * @type {number}
+         */
+        this.webSocketPort = 443;
+
+        /**
+         * The profile name for the user.
+         * @type {string}
+         */
+        this.profileName = '';
+
+        /**
+         * The SIP username for authentication.
+         * @type {string}
+         */
+        this.sipUserName = '';
+
+        /**
+         * The SIP password for authentication.
+         * @type {string}
+         */
+        this.sipPassword = '';
+
+        /**
+         * The number of reconnection attempts for the transport layer.
+         * @type {number}
+         */
+        this.transportReconnectionAttempts = 99;
+
+        /**
+         * The expiration time for SIP registration in seconds.
+         * @type {number}
+         */
+        this.registerExpires = 300;
+
+        /**
+         * The user agent instance for handling SIP communications.
+         * @type {SIP.UA|null}
+         */
+        this.userAgent = null;
+
+        /**
+         * Options for SIP registerer, including the expiration time.
+         * @type {Object}
+         * @property {number} expires - The expiration time for SIP registration in seconds.
+         */
+        this.registererOptions = { 
+            expires: this.registerExpires
+        };
+
+		/**
+		 * Initializes the SIP user agent.
+		 * The SIP user agent is responsible to handling SIP communications
 		 */
-		this.createUserAgent = function(extensionSipData) {
-			console.log(extensionSipData)
+		this.createUserAgent = function() {
 			const options = {
-				uri: SIP.UserAgent.makeURI("sip:"+ extensionSipData.username + "@" + self.wssServer),
+				uri: SIP.UserAgent.makeURI("sip:"+ self.sipUserName + "@" + self.wssServer),
 				transportOptions: {
 					server: "wss://" + self.wssServer + ":"+ self.webSocketPort +""+ self.serverPath,
 					traceSip: false,
 				},
 				displayName: self.profileName,
-				authorizationUsername: extensionSipData.username,
-				authorizationPassword: extensionSipData.password,
+				authorizationUsername: self.sipUserName,
+				authorizationPassword: self.sipPassword,
 				contactParams: { "transport" : "wss" },
 				autoStart: false,
 				autoStop: true,
