@@ -19,7 +19,8 @@
         "cp_unexpected_error": "❌ Intenta de nuevo o consulte a soporte Callpicker",
         "invalid_client": "❌ Credenciales Callpicker Inválidas",
         "unexpected_amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles.",
-        "amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles."
+        "amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles.",
+        "voip_inbound_call_label": "Llamada entrante"
     },
     "callpickerMessages": {
         "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call",
