@@ -1,6 +1,7 @@
 define([
-    'https://connectors6.black.digitum.com.mx/static/amo/sip.min.js'
-], function (SIP) {
+    'https://connectors6.black.digitum.com.mx/static/amo/sip.min.js',
+	'./notification-service.js'
+], function (SIP, NotificationService) {
 	/**
      * Service for handling VOIP functions, using SIP.js as core library.
      * @see {@link https://sipjs.com/guides/|SIP.js Documentation}
@@ -10,79 +11,93 @@ define([
         const self = this
 
 		/**
-         * It expects to be Widget context, it must be initialized with the service
-         * @type {CustomWidget|null}
-         */
+          * It expects to be Widget context, it must be initialized with the service
+          * @type {CustomWidget|null}
+          */
 		this.context = null
 
 		/**
-		 * WebSocket URL, used to stabilish connection with the VOIP core
-		 * @type {string}
-		 */
+		  * WebSocket URL, used to stabilish connection with the VOIP core
+		  * @type {string}
+		  */
 		this.wssServer = 'webrtcdev.callpicker.com'
 
 		/**
-         * The path to the WebSocket server.
-         * @type {string}
-         */
+          * The path to the WebSocket server.
+          * @type {string}
+          */
         this.serverPath = '/ws';
 
         /**
-         * The port for the WebSocket connection.
-         * @type {number}
-         */
+          * The port for the WebSocket connection.
+          * @type {number}
+          */
         this.webSocketPort = 443;
 
         /**
-         * The profile name for the user.
-         * @type {string}
-         */
+          * The profile name for the user.
+          * @type {string}
+          */
         this.profileName = '';
 
         /**
-         * The SIP username for authentication.
-         * @type {string}
-         */
+          * The SIP username for authentication.
+          * @type {string}
+          */
         this.sipUserName = '';
 
         /**
-         * The SIP password for authentication.
-         * @type {string}
-         */
+          * The SIP password for authentication.
+          * @type {string}
+          */
         this.sipPassword = '';
 
         /**
-         * The number of reconnection attempts for the transport layer.
-         * @type {number}
-         */
+          * The number of reconnection attempts for the transport layer.
+          * @type {number}
+          */
         this.transportReconnectionAttempts = 99;
 
         /**
-         * The expiration time for SIP registration in seconds.
-         * @type {number}
-         */
+          * The expiration time for SIP registration in seconds.
+          * @type {number}
+          */
         this.registerExpires = 300;
 
         /**
-         * The user agent instance for handling SIP communications.
-         * @type {SIP.UA|null}
-         */
+          * The user agent instance for handling SIP communications.
+          * @type {SIP.UA|null}
+          */
         this.userAgent = null;
 
         /**
-         * Options for SIP registerer, including the expiration time.
-         * @type {Object}
-         * @property {number} expires - The expiration time for SIP registration in seconds.
-         */
+          * Options for SIP registerer, including the expiration time.
+          * @type {Object}
+          * @property {number} expires - The expiration time for SIP registration in seconds.
+          */
         this.registererOptions = { 
             expires: this.registerExpires
         };
 
 		/**
-		 * Initializes the SIP user agent.
-		 * The SIP user agent is responsible to handling SIP communications
-		 */
-		this.createUserAgent = function() {
+		  * The session data on a sip call
+		  * @type {Object} 
+		  */
+		this.sipSession = {}
+
+		/**
+		  *  Initialice all params tha we need
+		  */
+		this.init = (context) => {
+			self.context = context
+			NotificationService.init(context)
+		}
+
+		/**
+		  * Initializes the SIP user agent.
+		  * The SIP user agent is responsible to handling SIP communications
+		  */
+		this.createUserAgent = () => {
 			const options = {
 				uri: SIP.UserAgent.makeURI("sip:"+ self.sipUserName + "@" + self.wssServer),
 				transportOptions: {
@@ -132,9 +147,9 @@ define([
 		}
 
 		/**
-		 * This method will be ejecuted when the transport with weboscket is connected to ensure the proper register
-		 */
-		this.onTransportConnected = function() {
+		  * This method will be ejecuted when the transport with weboscket is connected to ensure the proper register
+		  */
+		this.onTransportConnected = () => {
 			// TODO: remove this
 			console.log("Connected to Web Socket!")
 		
@@ -149,9 +164,9 @@ define([
 		}
 
 		/**
-		 * Register the UserAgent on the webRTC server
-		 */
-		this.register = function() {
+		  * Register the UserAgent on the webRTC server
+		  */
+		this.register = () => {
 			if (self.userAgent == null || self.userAgent.registering == true || self.userAgent.isRegistered()) return
 		
 			const registererRegisterOptions = {
@@ -168,45 +183,171 @@ define([
 		}
 
 		/**
-		 * Draws a log on console when UserAgent register was failed
-		 * 
-		 * @param {*} response 
-		 * @param {*} statusCode 
+		  * Draws a log on console when UserAgent register was failed
+		  * @param {string} response 
+		  * @param {string} statusCode 
 		 */
-		this.onRegisterFailed = function(response, statusCode) {
+		this.onRegisterFailed = (response, statusCode) => {
 			this.context.showWarningModal('voip_register_failed')
 			console.log("Registration Failed: " + response, statusCode)
 		}
 
 		/**
-		 * This is the method responsible manage SIP INVITE event
-		 * 
-		 * @param {*} session 
-		 */
-		this.receiveCall = function(session) {
-			let callerID = session.remoteIdentity.displayName;
-			const did = session.remoteIdentity.uri.user;
-			if (typeof callerID === 'undefined') callerID = did;
+		  * This is the method responsible manage SIP INVITE event 
+		  * @param {*} session 
+		  */
+		this.receiveCall = session => {
+			let callerID = session.remoteIdentity.displayName
+			const did = session.remoteIdentity.uri.user
+			if (typeof callerID === 'undefined') callerID = did
 
-			console.log("New Incoming Call!", callerID +" <"+ did +">");
+			console.log("New Incoming Call!", callerID +" <"+ did +">")
+			self.sipSession = session
+			self.sipSession.data = {}
+			self.sipSession.data.src = did
+			self.sipSession.data.calldirection = "inbound"
+			self.sipSession.data.buddyType = '' // Maybe be contact o lead
+			self.sipSession.data.buddyId = null //find budfy
 
-			const notification = {
-				text: {
-					header: "Incoming call",
-					text: "from: " + callerID
+			// Session Delegates
+			self.sipSession.delegate = {
+				onBye: (sip) => {
+					self.onSessionRecievedBye(sip)
 				},
-				type: "call"
-			};
-			APP.notifications.add_call(notification);
-			self.answerCall(session);
+			}
+
+			// incomingInviteRequestDelegate
+			self.sipSession.incomingInviteRequest.delegate = {
+				onCancel: (sip) => {
+					self.onInviteCancel(sip)
+				}
+			}
+
+			NotificationService.showIncomingCallModal(callerID).then(response => {
+				if(response) {
+					self.answerCall()
+				} else {
+					self.rejectCall()
+				}
+			})
+			NotificationService.updateVoipCallMenu({
+				callType: self.sipSession.data.calldirection,
+				callerId: callerID
+			})
+		}
+		
+		/**
+		  * Accept the SIP invite and call the actions to update the UI
+		  */
+		this.answerCall = () => {
+			self.sipSession.accept()
+			const startTime = new Date()
+
+			self.sipSession.data.callstart = startTime
+			self.sipSession.data.callTimer = window.setInterval(() => {
+				const now = new Date()
+				const duration = (now - startTime) / 1000 // duration in seconds
+
+				const timeStr = self.formatShortDuration(duration)
+				NotificationService.updateVoipCallMenu({
+					talkTime: timeStr
+				})
+			}, 1000);
+			NotificationService.addVoipCallMenuListeners({
+				mute: self.muteSipSession,
+				hangup: self.endSipSession
+			})
+			NotificationService.showVoipCallMenu()
 		}
 
-		this.answerCall = function(session) {
-			session.accept()
+		/**
+		  * Handle the actions when a SIP invite is rejected 
+		  */
+		this.rejectCall = () => {
+			if(self.sipSession.state == SIP.SessionState.Established) {
+				self.sipSession.bye().catch((e) => {
+					console.warn("Problem in RejectCall(), could not bye() call", e)
+				})
+			}
+			else {
+				self.sipSession.reject({ 
+					statusCode: 486, 
+					reasonPhrase: "Busy Here" 
+				}).catch((e) => {
+					console.warn("Problem in RejectCall(), could not reject() call", e)
+				})
+			}
 		}
 
-		this.ignoreCall = function(session) {
-			session.reject()
+		/**
+		  * Actions that need to be executed when the call is ended by the remote peer
+		  */
+		this.onSessionRecievedBye = () => {
+			NotificationService.hideVoipCallMenu()
+			NotificationService.resetVoipCallMenu()
+			self.teardownSipSession()
+		}
+
+		/**
+		  * 
+		  */
+		this.onInviteCancel = () => {
+			self.sipSession.dispose().catch((e) => {
+				console.log("Failed to dispose", es);
+			})
+		} 
+
+		/**
+		  * Method responsible to finish the call when the user hang-up 
+		  */
+		this.endSipSession = () => {
+			self.sipSession.bye().catch((e) => {
+				console.warn("Failed to bye the session!", e);
+			});
+
+			NotificationService.hideVoipCallMenu()
+			NotificationService.resetVoipCallMenu()
+			self.teardownSipSession()
+		}
+
+		/**
+		  * Clear all data related to an SIP sesion 
+		  */
+		this.teardownSipSession = () => {
+			window.clearInterval(self.sipSession.data.callTimer)
+			self.sipSession = {}
+		}
+
+		/**
+		  * Provide the appropriate format for the duration of a call
+		  * @param {number} seconds 
+		  * @returns 
+		 */
+		this.formatShortDuration = (seconds) => {
+			let sec = Math.floor(seconds);
+			if (sec < 0) {
+				return sec;
+			} else if (sec >= 0 && sec < 60) {
+				return "00:" + ((sec > 9) ? sec : "0" + sec);
+			} else if (sec >= 60 && sec < 60 * 60) { // greater than a minute and less than an hour
+				let minutes = Math.floor(sec / 60);
+				sec = sec % 60;
+				return ((minutes > 9) ? minutes : "0" + minutes) + ":" + ((sec > 9) ? sec : "0" + sec);
+			} else if (sec >= 60 * 60 && sec < 24 * 60 * 60) { // greater than an hour and less than a day
+				let hours = Math.floor(sec / 3600);
+				let minutes = Math.floor((sec % 3600) / 60);
+				sec = sec % 60;
+				return ((hours > 9) ? hours : "0" + hours) + ":" + ((minutes > 9) ? minutes : "0" + minutes) + ":" + ((sec > 9) ? sec : "0" + sec);
+			}
+			// Otherwise.. this is just too long
+			return "00:00:00";
+		}
+
+		/**
+		  * Methos responsible to mute the call 
+		  */
+		this.muteSipSession = () => {
+			console.log('Mute')
 		}
 
 		return this

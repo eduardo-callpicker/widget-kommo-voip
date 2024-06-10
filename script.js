@@ -4,16 +4,15 @@ define([
   'lib/components/base/modal',
   './js/localstorage-service.js',
   './js/connectors-service.js',
-  './js/voip-service.js'
-], function ($, _, Modal, LocalStorageService, ConnectorsService, VoipService) {
+  './js/voip-service.js',
+  './js/notification-service.js'
+], function ($, _, Modal, LocalStorageService, ConnectorsService, VoipService, NotificationService) {
 
   var CustomWidget = function () {
     /*------------------------------------
       Set Context on ConnectorsService
      -------------------------------------*/
-     ConnectorsService.CONTEXT = this
-     VoipService.context = this
-     VoipService.sipUserName = this.system().kommouser
+    ConnectorsService.context = this
 
     /*------------------------------------
       WIDGET INFORMATION
@@ -1025,7 +1024,11 @@ define([
         return
       }
 
-      VoipService.createUserAgent(userExtensionSipCredentials)
+      VoipService.init(self)
+      VoipService.profileName = self.system().amouser
+      VoipService.sipUserName = userExtensionSipCredentials.username
+      VoipService.sipPassword = userExtensionSipCredentials.password
+      VoipService.createUserAgent()
     }
 
     /**
@@ -1071,6 +1074,13 @@ define([
         // TODO: Validate if inbout calls function was enabled before this
         if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
           self.createUserAgent()
+
+          APP.widgets.notificationsPhone({
+            ns: self.ns,
+            click: function() {
+              NotificationService.toggleVoipCallMenu()
+            }
+          });
         }
 
         return true
