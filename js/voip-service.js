@@ -1,7 +1,8 @@
 define([
     'https://connectors6.black.digitum.com.mx/static/amo/sip.min.js',
-	'./notification-service.js'
-], function (SIP, NotificationService) {
+	'./notification-service.js',
+	'./general-service.js'
+], function (SIP, NotificationService, GeneralService) {
 	/**
      * Service for handling VOIP functions, using SIP.js as core library.
      * @see {@link https://sipjs.com/guides/|SIP.js Documentation}
@@ -98,6 +99,7 @@ define([
 		  * The SIP user agent is responsible to handling SIP communications
 		  */
 		this.createUserAgent = () => {
+			NotificationService.showIncomingCallModal('test')
 			const options = {
 				uri: SIP.UserAgent.makeURI("sip:"+ self.sipUserName + "@" + self.wssServer),
 				transportOptions: {
@@ -193,7 +195,7 @@ define([
 		}
 
 		/**
-		  * This is the method responsible manage SIP INVITE event 
+		  * This is the method responsible to manage SIP INVITE event 
 		  * @param {*} session 
 		  */
 		this.receiveCall = session => {
@@ -223,16 +225,18 @@ define([
 				}
 			}
 
-			NotificationService.showIncomingCallModal(callerID).then(response => {
-				if(response) {
-					self.answerCall()
-				} else {
-					self.rejectCall()
-				}
+			NotificationService.showIncomingCallModal(callerID)
+			.then(() => {
+				self.answerCall()
+				NotificationService.updateVoipCallMenu({
+					callType: self.sipSession.data.calldirection,
+					callerId: callerID
+				})
 			})
-			NotificationService.updateVoipCallMenu({
-				callType: self.sipSession.data.calldirection,
-				callerId: callerID
+			.catch(() => {
+				self.rejectCall()
+				// Reset de VOIP call menu to prevent unspected changes
+				NotificationService.resetVoipCallMenu()
 			})
 		}
 		
@@ -248,7 +252,7 @@ define([
 				const now = new Date()
 				const duration = (now - startTime) / 1000 // duration in seconds
 
-				const timeStr = self.formatShortDuration(duration)
+				const timeStr = GeneralService.formatDuration(duration)
 				NotificationService.updateVoipCallMenu({
 					talkTime: timeStr
 				})
@@ -289,12 +293,15 @@ define([
 		}
 
 		/**
-		  * 
+		  * Actions that neet to be excecuted when the invite is caceled the remote peer
 		  */
 		this.onInviteCancel = () => {
 			self.sipSession.dispose().catch((e) => {
 				console.log("Failed to dispose", es);
 			})
+
+			NotificationService.incomingCallModal.destroy()
+			NotificationService.resetVoipCallMenu()
 		} 
 
 		/**
@@ -311,7 +318,7 @@ define([
 		}
 
 		/**
-		  * Clear all data related to an SIP sesion 
+		  * Clear all data related to a SIP sesion 
 		  */
 		this.teardownSipSession = () => {
 			window.clearInterval(self.sipSession.data.callTimer)
@@ -319,32 +326,7 @@ define([
 		}
 
 		/**
-		  * Provide the appropriate format for the duration of a call
-		  * @param {number} seconds 
-		  * @returns 
-		 */
-		this.formatShortDuration = (seconds) => {
-			let sec = Math.floor(seconds);
-			if (sec < 0) {
-				return sec;
-			} else if (sec >= 0 && sec < 60) {
-				return "00:" + ((sec > 9) ? sec : "0" + sec);
-			} else if (sec >= 60 && sec < 60 * 60) { // greater than a minute and less than an hour
-				let minutes = Math.floor(sec / 60);
-				sec = sec % 60;
-				return ((minutes > 9) ? minutes : "0" + minutes) + ":" + ((sec > 9) ? sec : "0" + sec);
-			} else if (sec >= 60 * 60 && sec < 24 * 60 * 60) { // greater than an hour and less than a day
-				let hours = Math.floor(sec / 3600);
-				let minutes = Math.floor((sec % 3600) / 60);
-				sec = sec % 60;
-				return ((hours > 9) ? hours : "0" + hours) + ":" + ((minutes > 9) ? minutes : "0" + minutes) + ":" + ((sec > 9) ? sec : "0" + sec);
-			}
-			// Otherwise.. this is just too long
-			return "00:00:00";
-		}
-
-		/**
-		  * Methos responsible to mute the call 
+		  * Method responsible to mute the call 
 		  */
 		this.muteSipSession = () => {
 			console.log('Mute')
