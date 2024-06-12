@@ -10,9 +10,10 @@ define([
 
   var CustomWidget = function () {
     /*------------------------------------
-      Set Context on ConnectorsService
+      Set Context on the services
      -------------------------------------*/
     ConnectorsService.context = this
+    NotificationService.context = this
 
     /*------------------------------------
       WIDGET INFORMATION
@@ -1075,6 +1076,7 @@ define([
         if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
           self.createUserAgent()
 
+          NotificationService.initVoipCallMenu()
           APP.widgets.notificationsPhone({
             ns: self.ns,
             click: function() {
@@ -1086,6 +1088,7 @@ define([
         return true
       },
       bind_actions: function () {
+        console.log('ws')
         return true
       },
       settings: async function ($modal_body) {

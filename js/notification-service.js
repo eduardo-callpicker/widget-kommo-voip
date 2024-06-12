@@ -41,7 +41,6 @@ define([
           */
         this.init = (context) => {
             self.context = context
-            self.initVoipCallMenu()
         }
 
         /**
@@ -153,6 +152,10 @@ define([
                 const container = $('#page_holder')
 
                 container.append(template.render())
+
+                $('.voip__call-menu .voip__call-settings-btn').on('click', () => {
+                    $('.voip__call-menu .voip__call-settings-options').toggle()
+                })
             })
         }
 
@@ -186,6 +189,9 @@ define([
           */
         this.showVoipCallMenu = () => {
             $('.voip__call-menu').show()
+            $('.voip__call-menu .voip__call-options').show()
+            $('.voip__call-menu .voip__call-settings-options').hide()
+            $('.voip__call-menu .voip__call-settings').hide()
         }
 
         /**
@@ -193,6 +199,9 @@ define([
           */
         this.hideVoipCallMenu = () => {
             $('.voip__call-menu').hide()
+            $('.voip__call-menu .voip__call-options').hide()
+            $('.voip__call-menu .voip__call-settings-options').show()
+            $('.voip__call-menu .voip__call-settings').show()
         }
 
         /**
@@ -228,6 +237,7 @@ define([
             $('.voip__call-menu .voip__call-status .voip__call-caller-id').html('')
             $('.voip__call-menu .voip__call-options .voip__talk-time').html('00:00')
             $('.voip__call-menu .voip__call-status .voip__call-type').html('')
+            $('.voip__call-menu .voip__call-options').hide()
         }
 
         /**
