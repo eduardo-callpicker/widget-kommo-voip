@@ -116,8 +116,27 @@ define([
 
                         // Play incoming call ringtone 
                         self.playIncomingCallAudio()
+
+                        // Define the notification title and options
+                        const title = self.context.getCallpickerCode('voip_inbound_call_label')
+                        const options = {
+                            body: self.context.getCallpickerCode('voip_inbound_call_description') + callerID,
+                            icon: self.context.params.path + '/files/phone.jpg'
+                        };
+
+                        // Request permission and show the browser notification
+                        if (Notification.permission === 'granted') {
+                            self.showBrowserNotification(title, options);
+                        } else {
+                            Notification.requestPermission().then(permission => {
+                                if (permission === 'granted') {
+                                    self.showBrowserNotification(title, options);
+                                }
+                            });
+                        }
+
                     },
-                    destroy: function () {
+                    destroy: () => {
                         window.clearInterval(ringingTime)
                         self.stopIncomingCallAudio()
                     }
@@ -236,6 +255,19 @@ define([
            self.rinnger.load();
 
            self.rinnger = null
+        }
+
+        this.showBrowserNotification = (title, options) => {
+            if (Notification.permission !== 'granted') {
+                return
+            } 
+
+            const notification = new Notification(title, options)
+
+            notification.onclick = () => {
+                window.focus()
+                notification.close()
+            };
         }
 
 		return this

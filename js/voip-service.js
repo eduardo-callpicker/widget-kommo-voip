@@ -84,7 +84,7 @@ define([
 		  * The session data on a sip call
 		  * @type {Object} 
 		  */
-		this.sipSession = {}
+		this.sipSession = null
 
 		/**
 		  *  Initialice all params tha we need
@@ -99,7 +99,6 @@ define([
 		  * The SIP user agent is responsible to handling SIP communications
 		  */
 		this.createUserAgent = () => {
-			NotificationService.showIncomingCallModal('test')
 			const options = {
 				uri: SIP.UserAgent.makeURI("sip:"+ self.sipUserName + "@" + self.wssServer),
 				transportOptions: {
@@ -204,6 +203,7 @@ define([
 			if (typeof callerID === 'undefined') callerID = did
 
 			console.log("New Incoming Call!", callerID +" <"+ did +">")
+
 			self.sipSession = session
 			self.sipSession.data = {}
 			self.sipSession.data.src = did
@@ -234,7 +234,7 @@ define([
 				})
 			})
 			.catch(() => {
-				self.rejectCall()
+				self.rejectCall(session)
 				// Reset de VOIP call menu to prevent unspected changes
 				NotificationService.resetVoipCallMenu()
 			})
@@ -267,20 +267,22 @@ define([
 		/**
 		  * Handle the actions when a SIP invite is rejected 
 		  */
-		this.rejectCall = () => {
-			if(self.sipSession.state == SIP.SessionState.Established) {
-				self.sipSession.bye().catch((e) => {
-					console.warn("Problem in RejectCall(), could not bye() call", e)
+		this.rejectCall = (session) => {
+			if(session.state == SIP.SessionState.Established) {
+				session.bye().catch((e) => {
+					console.warn("Problem in RejectCall, could not bye call", e)
 				})
 			}
 			else {
-				self.sipSession.reject({ 
+				session.reject({ 
 					statusCode: 486, 
 					reasonPhrase: "Busy Here" 
 				}).catch((e) => {
-					console.warn("Problem in RejectCall(), could not reject() call", e)
+					console.warn("Problem in RejectCall, could not reject call", e)
 				})
 			}
+
+			self.teardownSipSession()
 		}
 
 		/**
@@ -322,7 +324,7 @@ define([
 		  */
 		this.teardownSipSession = () => {
 			window.clearInterval(self.sipSession.data.callTimer)
-			self.sipSession = {}
+			self.sipSession = null
 		}
 
 		/**
