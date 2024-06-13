@@ -1,8 +1,9 @@
 define([
     'jquery',
     'lib/components/base/modal',
-    './general-service.js'
-], function ($, Modal, GeneralService) {
+    './general-service.js',
+    './localstorage-service.js'
+], function ($, Modal, GeneralService, LocalStorageService) {
 	/**
 	 * Service to handle modal creations
 	 * 
@@ -148,13 +149,16 @@ define([
           * The VOIP call menu is where the call details will be put 
           */
         this.initVoipCallMenu = () => {
-            self.getTemplate('cp_widget_voip_call_menu', template => {
-                const container = $('#page_holder')
-
-                container.append(template.render())
-
-                $('.voip__call-menu .voip__call-settings-btn').on('click', () => {
-                    $('.voip__call-menu .voip__call-settings-options').toggle()
+            return new Promise((resolve, reject) => {
+                self.getTemplate('cp_widget_voip_call_menu', template => {
+                    const container = $('#page_holder')
+    
+                    container.append(template.render())
+    
+                    $('.voip__call-menu .voip__call-settings-btn').on('click', () => {
+                        $('.voip__call-menu .voip__call-settings-options').toggle()
+                    })
+                    resolve(true)
                 })
             })
         }
@@ -167,6 +171,29 @@ define([
           * @param {string|null} data.talkTime Spects to be a formmated time like 00:00
          */
         this.updateVoipCallMenu = data => {
+            const updateSelect = (select, options, type = 'input') => {
+                select.empty()
+                $.each(options, (index, option) => {
+                    const newOption = new Option(option.text, option.value)
+                    if (option.disabled) {
+                        newOption.disabled = true
+                    }
+                    select.append(newOption)
+                });
+
+                let active = null
+                if (type == 'output') {
+                    active = LocalStorageService.get('active-speaker')
+                } else {
+                    active = LocalStorageService.get('active-audio-input')
+                }
+                if (active !== null) {
+                    select.val(active)
+                } else {
+                    select.val(type + '-default')
+                }
+            }
+            
             if (data.hasOwnProperty('callType')) {
                 if (data.callType == 'inbound') {
                     $('.voip__call-menu .voip__call-status .voip__call-type').html(
@@ -181,6 +208,16 @@ define([
 
             if (data.hasOwnProperty('talkTime')) {
                 $('.voip__call-menu .voip__call-options .voip__talk-time').html(data.talkTime)
+            }
+
+            if (data.hasOwnProperty('audioinputOptions')) {
+                const select = $('.voip__call-menu .voip__call-settings-options .voip__mic-setting')
+                updateSelect(select, data.audioinputOptions)
+            }
+
+            if (data.hasOwnProperty('speakerOptions')) {
+                const select = $('.voip__call-menu .voip__call-settings-options .voip__speaker-setting')
+                updateSelect(select, data.speakerOptions, 'output');
             }
         }
 
@@ -200,7 +237,7 @@ define([
         this.hideVoipCallMenu = () => {
             $('.voip__call-menu').hide()
             $('.voip__call-menu .voip__call-options').hide()
-            $('.voip__call-menu .voip__call-settings-options').show()
+            $('.voip__call-menu .voip__call-settings-options').hide()
             $('.voip__call-menu .voip__call-settings').show()
         }
 
@@ -228,6 +265,24 @@ define([
                 $(document).off('click', '.voip__call-menu .voip__call-options .voip__hangup-phone-btn', callbacks.hangup)
                 $(document).on('click', '.voip__call-menu .voip__call-options .voip__hangup-phone-btn', callbacks.hangup)
             } 
+
+            if (callbacks.hasOwnProperty('audioInput')) {
+                function callback(e) {
+                    const deviceId = $(e.target).val()
+                    callbacks.audioInput(deviceId)
+                }
+                $(document).off('change', '.voip__call-menu .voip__call-settings-options .voip__mic-setting', callback)
+                $(document).on('change', '.voip__call-menu .voip__call-settings-options .voip__mic-setting', callback)
+            } 
+
+            if (callbacks.hasOwnProperty('speaker')) {
+                function callback(e) {
+                    const deviceId = $(e.target).val()
+                    callbacks.speaker(deviceId)
+                }
+                $(document).off('change', '.voip__call-menu .voip__call-settings-options .voip__speaker-setting', callback)
+                $(document).on('change', '.voip__call-menu .voip__call-settings-options .voip__speaker-setting', callback)
+            } 
         }   
 
         /**
@@ -238,6 +293,7 @@ define([
             $('.voip__call-menu .voip__call-options .voip__talk-time').html('00:00')
             $('.voip__call-menu .voip__call-status .voip__call-type').html('')
             $('.voip__call-menu .voip__call-options').hide()
+            $('.voip__call-menu .voip__call-remote-audio').html('')
         }
 
         /**
@@ -267,6 +323,14 @@ define([
            self.rinnger = null
         }
 
+        /**
+          * Launch a borwser notification (desktop)
+          * @param {string} title 
+          * @param {object} options 
+          * @param {string} options.description 
+          * @param {string} options.icon
+          * @returns 
+          */
         this.showBrowserNotification = (title, options) => {
             if (Notification.permission !== 'granted') {
                 return
@@ -278,6 +342,14 @@ define([
                 window.focus()
                 notification.close()
             };
+        }
+
+        /**
+          * Add and audio tag on the DOM to handle the remoteAudio  
+          */
+        this.addIncomingCallAudioTag = () => {
+            html = '<audio id="remoteAudio"></audio>'
+            $('.voip__call-menu .voip__call-remote-audio').html(html)
         }
 
 		return this

@@ -1025,7 +1025,6 @@ define([
         return
       }
 
-      VoipService.init(self)
       VoipService.profileName = self.system().amouser
       VoipService.sipUserName = userExtensionSipCredentials.username
       VoipService.sipPassword = userExtensionSipCredentials.password
@@ -1074,15 +1073,18 @@ define([
 
         // TODO: Validate if inbout calls function was enabled before this
         if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
-          self.createUserAgent()
 
-          NotificationService.initVoipCallMenu()
           APP.widgets.notificationsPhone({
             ns: self.ns,
             click: function() {
               NotificationService.toggleVoipCallMenu()
             }
           });
+
+          NotificationService.initVoipCallMenu().then(() => {
+            VoipService.init(self)
+            self.createUserAgent()
+          })
         }
 
         return true

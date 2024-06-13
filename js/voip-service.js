@@ -1,8 +1,10 @@
 define([
+	'underscore',
     'https://connectors6.black.digitum.com.mx/static/amo/sip.min.js',
 	'./notification-service.js',
-	'./general-service.js'
-], function (SIP, NotificationService, GeneralService) {
+	'./general-service.js',
+	'./localstorage-service.js'
+], function (_, SIP, NotificationService, GeneralService, LocalStorageService) {
 	/**
      * Service for handling VOIP functions, using SIP.js as core library.
      * @see {@link https://sipjs.com/guides/|SIP.js Documentation}
@@ -87,11 +89,53 @@ define([
 		this.sipSession = null
 
 		/**
+		  * Determines if the platform has Mic 
+		  * @type {boolean}
+		  */
+		this.hasAudioDevice = false;
+
+		/**
+		  * Determines if the platform has audio output device
+		  * @type {boolean}
+		  */
+		this.hasSpeakerDevice = false; // Safari and Firefox don't have these
+
+		/**
+		 * The audio input devices list
+		 * @type {Array}
+		 */
+		this.audioinputDevices = [];
+
+		/**
+		 * The audio output devices list
+		 * @type {Array}
+		 */
+		this.speakerDevices = [];
+
+		/**
+		  * Key for active audio input on the local storage
+		  * @type {string}
+		  */
+		this.activeAudioInputKey = 'active-audio-input'
+
+		/**
+		  * Key for active audio output on the local storage
+		  * @type {string}
+		  */
+		this.activeSpeakerKey = 'active-speaker'
+
+		/**
 		  *  Initialice all params tha we need
 		  */
 		this.init = (context) => {
 			self.context = context
 			NotificationService.init(context)
+			console.log(NotificationService)
+			
+			self.detectDevices()
+			window.setInterval(function(){
+				self.detectDevices()
+			}, 10000);
 		}
 
 		/**
@@ -208,14 +252,17 @@ define([
 			self.sipSession.data = {}
 			self.sipSession.data.src = did
 			self.sipSession.data.calldirection = "inbound"
-			self.sipSession.data.buddyType = '' // Maybe be contact o lead
-			self.sipSession.data.buddyId = null //find budfy
+			self.sipSession.data.buddyType = '' //TODO: Maybe be contact o lead
+			self.sipSession.data.buddyId = null //TODO: find budfy
 
 			// Session Delegates
 			self.sipSession.delegate = {
 				onBye: (sip) => {
 					self.onSessionRecievedBye(sip)
 				},
+				onSessionDescriptionHandler: function(sdh, provisional){
+					self.onSessionDescriptionHandlerCreated(sdh, provisional);
+				}
 			}
 
 			// incomingInviteRequestDelegate
@@ -225,6 +272,7 @@ define([
 				}
 			}
 
+			NotificationService.addIncomingCallAudioTag()
 			NotificationService.showIncomingCallModal(callerID)
 			.then(() => {
 				self.answerCall()
@@ -233,7 +281,8 @@ define([
 					callerId: callerID
 				})
 			})
-			.catch(() => {
+			.catch((e) => {
+				console.error(e)
 				self.rejectCall(session)
 				// Reset de VOIP call menu to prevent unspected changes
 				NotificationService.resetVoipCallMenu()
@@ -244,7 +293,36 @@ define([
 		  * Accept the SIP invite and call the actions to update the UI
 		  */
 		this.answerCall = () => {
-			self.sipSession.accept()
+			// Start SIP handling
+			const spdOptions = {
+				sessionDescriptionHandlerOptions: {
+					constraints: {
+						audio: { deviceId : "default" },
+						video: false
+					}
+				}
+			}
+		
+			// Configure Audio
+			const currentAudioDevice = self.getActiveAudioInput();
+			console.log(currentAudioDevice)
+			if (currentAudioDevice != "default") {
+				let confirmedAudioDevice = false;
+				for (let i = 0; i < self.audioinputDevices.length; ++i) {
+					if(currentAudioDevice == self.audioinputDevices[i].deviceId) {
+						confirmedAudioDevice = true;
+						break;
+					}
+				}
+				if (confirmedAudioDevice) {
+					spdOptions.sessionDescriptionHandlerOptions.constraints.audio.deviceId = { exact: currentAudioDevice }
+				}
+				else {
+					console.warn("The audio device you used before is no longer available, default settings applied.");
+				}
+			}
+
+			self.sipSession.accept(spdOptions)
 			const startTime = new Date()
 
 			self.sipSession.data.callstart = startTime
@@ -295,6 +373,65 @@ define([
 		}
 
 		/**
+		  * Call the function responsible to add stream audio when the session description handlres was created
+		  * @param {*} sdh 
+		  * @param {*} provisional 
+		  */
+		this.onSessionDescriptionHandlerCreated = (sdh, provisional) => {
+			if (sdh) {
+				if(sdh.peerConnection){
+					sdh.peerConnection.ontrack = (event) => {
+						self.onTrackAddedEvent();
+					}
+				}
+				else{
+					console.warn("onSessionDescriptionHandler fired without a peerConnection");
+				}
+			}
+			else{
+				console.warn("onSessionDescriptionHandler fired without a sessionDescriptionHandler");
+			}
+		}
+
+		/**
+		  * Adds the audio track to an audio tag on the DOM to reproduce it on the active speaker
+		  * the audio is taked from the stream media (the call) 
+		  */
+		this.onTrackAddedEvent = () => {		
+			const pc = self.sipSession.sessionDescriptionHandler.peerConnection;
+			const remoteAudioStream = new MediaStream()
+		
+			pc.getTransceivers().forEach((transceiver) => {
+				// Add Media
+				const receiver = transceiver.receiver
+				if(receiver.track){
+					if(receiver.track.kind == "audio") {
+						console.log("Adding Remote Audio Track")
+						remoteAudioStream.addTrack(receiver.track)
+					}
+				}
+			});
+		
+			// Attach Audio
+			if(remoteAudioStream.getAudioTracks().length >= 1){
+				const remoteAudio = $("#remoteAudio").get(0)
+				remoteAudio.srcObject = remoteAudioStream
+				remoteAudio.onloadedmetadata = (e) => {
+					const activeAudioOuput = self.getActiveSpeaker()
+					console.log(activeAudioOuput)
+					if (typeof remoteAudio.sinkId !== 'undefined') {
+						remoteAudio.setSinkId(activeAudioOuput).then(function(){
+							console.log("sinkId applied: "+ activeAudioOuput)
+						}).catch(function(e){
+							console.warn("Error using setSinkId: ", e)
+						})
+					}
+					remoteAudio.play()
+				}
+			}
+		}
+
+		/**
 		  * Actions that neet to be excecuted when the invite is caceled the remote peer
 		  */
 		this.onInviteCancel = () => {
@@ -332,6 +469,125 @@ define([
 		  */
 		this.muteSipSession = () => {
 			console.log('Mute')
+		}
+		
+		/**
+		  * Detect the platform devices (audio-input and audio-output)
+		  * Addicionaly update the audio devices select on the voip call menu 
+		  */
+		this.detectDevices = () => {
+			navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
+				// deviceInfos will not have a populated lable unless to accept the permission
+				// during getUserMedia. This normally happens at startup/setup
+				// so from then on these devices will be with lables.
+				self.hasAudioDevice = false;
+				self.hasSpeakerDevice = false; // Safari and Firefox don't have these
+				let audioinputDevices = [];
+				let speakerDevices = [];
+				for (let i = 0; i < deviceInfos.length; ++i) {
+					if (deviceInfos[i].kind === "audioinput") {
+						self.hasAudioDevice = true;
+						audioinputDevices.push(deviceInfos[i]);
+					} 
+					else if (deviceInfos[i].kind === "audiooutput") {
+						self.hasSpeakerDevice = true;
+						speakerDevices.push(deviceInfos[i]);
+					}
+				}
+
+				// Only update the audio input divices list when changes were detected
+				if (!_.isEqual(audioinputDevices, self.audioinputDevices)) {
+					let audioinputOptions = []
+					for (let i = 0; i < audioinputDevices.length; ++i) {
+						const deviceInfo = audioinputDevices[i]
+						const devideId = deviceInfo.deviceId
+						let displayName = (deviceInfo.label) ? deviceInfo.label : "Microphone"
+						if(displayName.indexOf("(") > 0) {
+							displayName = displayName.substring(0,displayName.indexOf("("))
+						}
+						const disabled = (self.sipSession && self.sipSession.data.audioSourceDevice == devideId)
+						audioinputOptions.push({value: "input-"+ devideId, text: displayName, disabled : disabled })
+					}
+
+					NotificationService.updateVoipCallMenu({
+						audioinputOptions: audioinputOptions
+					})
+					NotificationService.addVoipCallMenuListeners({
+						audioInput: self.setActiveAudioInput
+					})
+				} 
+
+				// Only update speaker divices list when changes were detected
+				if (!_.isEqual(speakerDevices, self.speakerDevices)) {
+					let speakerOptions = []
+					for (let i = 0; i < speakerDevices.length; ++i) {
+						const deviceInfo = speakerDevices[i]
+						const devideId = deviceInfo.deviceId
+						let displayName = (deviceInfo.label) ? deviceInfo.label : "Speaker"
+						if(displayName.indexOf("(") > 0) {
+							displayName = displayName.substring(0,displayName.indexOf("("))
+						}
+						const disabled = (self.sipSession && self.sipSession.data.audioOutputDevice == devideId)
+						speakerOptions.push({value: "output-"+ devideId, text: displayName, disabled : disabled })
+					}
+
+					NotificationService.updateVoipCallMenu({
+						speakerOptions: speakerOptions
+					})
+					NotificationService.addVoipCallMenuListeners({
+						speaker: self.setActiveSpeaker
+					})
+				} 
+
+				self.audioinputDevices = [...audioinputDevices];
+				self.speakerDevices = [...speakerDevices];
+			}).catch((e) => {
+				console.error("Error enumerating devices", e);
+			});
+		}
+
+		/**
+		  * Save the active input audio divice ID on the local storage 
+		  * @param {string} audioInputID 
+		 */
+		this.setActiveAudioInput = (audioInputID) => {
+			LocalStorageService.set(self.activeAudioInputKey, audioInputID)	
+		}
+
+		/**
+		  * Save the active speaker divice ID on the local storage
+		  * @param {string} speakerID 
+		  */
+		this.setActiveSpeaker = (speakerID) => {
+			LocalStorageService.set(self.activeSpeakerKey, speakerID)
+		}
+
+		/**
+		  * Get the audio input device id setted as active 
+		  * @returns {string} The device ID
+		  */
+		this.getActiveAudioInput = () => {
+			const activeAudioInput = LocalStorageService.get(self.activeAudioInputKey)
+
+			if (activeAudioInput === null) {
+				return 'default'
+			}
+
+			return activeAudioInput.replace("input-", "")
+		}
+
+		/**
+		  * Get the audio output device id setted as active
+		  * @returns {string}  The device ID
+		  */
+		this.getActiveSpeaker = () => {
+			const  activeSpeaker = LocalStorageService.get(self.activeSpeakerKey)
+
+			if (activeSpeaker === null) {
+				return 'default'
+			}
+
+			return activeSpeaker.replace("output-", "")
 		}
 
 		return this
