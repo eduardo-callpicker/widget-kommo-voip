@@ -259,8 +259,23 @@ define([
           */
         this.addVoipCallMenuListeners = (callbacks) => {
             if (callbacks.hasOwnProperty('mute')) {
-                $(document).off('click', '.voip__call-menu .voip__call-options .voip__call-mute-btn', callbacks.mute)
-                $(document).on('click', '.voip__call-menu .voip__call-options .voip__call-mute-btn', callbacks.mute)
+                const callback = () => {
+                    $('.voip__call-menu .voip__call-options .voip__call-mute-btn').hide()
+                    $('.voip__call-menu .voip__call-options .voip__call-unmute-btn').show()
+                    callbacks.mute()
+                }
+                $(document).off('click', '.voip__call-menu .voip__call-options .voip__call-mute-btn', callback)
+                $(document).on('click', '.voip__call-menu .voip__call-options .voip__call-mute-btn', callback)
+            } 
+
+            if (callbacks.hasOwnProperty('unMute')) {
+                const callback = () => {
+                    $('.voip__call-menu .voip__call-options .voip__call-unmute-btn').hide()
+                    $('.voip__call-menu .voip__call-options .voip__call-mute-btn').show()
+                    callbacks.unMute()
+                }
+                $(document).off('click', '.voip__call-menu .voip__call-options .voip__call-unmute-btn', callback)
+                $(document).on('click', '.voip__call-menu .voip__call-options .voip__call-unmute-btn', callback)
             } 
 
             if (callbacks.hasOwnProperty('hangup')) {
@@ -269,7 +284,7 @@ define([
             } 
 
             if (callbacks.hasOwnProperty('audioInput')) {
-                function callback(e) {
+                const callback = (e) => {
                     const deviceId = $(e.target).val()
                     callbacks.audioInput(deviceId)
                 }
@@ -278,7 +293,7 @@ define([
             } 
 
             if (callbacks.hasOwnProperty('speaker')) {
-                function callback(e) {
+                const callback = (e) => {
                     const deviceId = $(e.target).val()
                     callbacks.speaker(deviceId)
                 }

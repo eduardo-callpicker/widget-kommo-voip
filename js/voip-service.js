@@ -350,24 +350,13 @@ define([
 			self.sipSession.data.audioSourceDevice = self.getActiveAudioInput()
 			self.sipSession.data.audioOutputDevice = self.getActiveSpeaker()
 
-			self.sipSession.accept(spdOptions)
-			const startTime = new Date()
-
-			self.sipSession.data.callstart = startTime
-			self.sipSession.data.callTimer = window.setInterval(() => {
-				const now = new Date()
-				const duration = (now - startTime) / 1000 // duration in seconds
-
-				const timeStr = GeneralService.formatDuration(duration)
-				NotificationService.updateVoipCallMenu({
-					talkTime: timeStr
-				})
-			}, 1000);
-			NotificationService.addVoipCallMenuListeners({
-				mute: self.muteSipSession,
-				hangup: self.endSipSession
-			})
-			NotificationService.showVoipCallMenu()
+			self.sipSession.accept(spdOptions).then(() => {
+				self.onInviteAccepted()
+			}).catch((error) => {
+				console.warn("Failed to answer call", error)
+				self.teardownSipSession()
+			});
+			
 		}
 
 		/**
@@ -392,6 +381,27 @@ define([
 			self.teardownSipSession()
 		}
 
+		this.onInviteAccepted = () => {
+			const startTime = new Date()
+
+			self.sipSession.data.callstart = startTime
+			self.sipSession.data.callTimer = window.setInterval(() => {
+				const now = new Date()
+				const duration = (now - startTime) / 1000 // duration in seconds
+
+				const timeStr = GeneralService.formatDuration(duration)
+				NotificationService.updateVoipCallMenu({
+					talkTime: timeStr
+				})
+			}, 1000);
+			NotificationService.addVoipCallMenuListeners({
+				mute: self.muteSipSession,
+				unMute: self.unMuteSipSession,
+				hangup: self.endSipSession
+			})
+			NotificationService.showVoipCallMenu()
+		}
+
 		/**
 		  * Actions that need to be executed when the call is ended by the remote peer
 		  */
@@ -410,7 +420,7 @@ define([
 			if (sdh) {
 				if(sdh.peerConnection){
 					sdh.peerConnection.ontrack = (event) => {
-						self.onTrackAddedEvent();
+						self.onTrackAddedEvent()
 					}
 				}
 				else{
@@ -497,7 +507,26 @@ define([
 		  * Method responsible to mute the call 
 		  */
 		this.muteSipSession = () => {
-			console.log('Mute')
+			const pc = self.sipSession.sessionDescriptionHandler.peerConnection;
+			pc.getSenders().forEach((RTCRtpSender) => {
+				if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+					console.log("Muting Audio Track : "+ RTCRtpSender.track.label)
+					RTCRtpSender.track.enabled = false
+				}
+			})
+		}
+
+		/**
+		  * Method responsible to unmute the call 
+		  */
+		this.unMuteSipSession = () => {
+			const pc = self.sipSession.sessionDescriptionHandler.peerConnection;
+			pc.getSenders().forEach((RTCRtpSender) => {
+				if(RTCRtpSender.track && RTCRtpSender.track.kind == "audio") {
+					console.log("Unmuting Audio Track : "+ RTCRtpSender.track.label)
+					RTCRtpSender.track.enabled = true
+				}
+			})
 		}
 		
 		/**
