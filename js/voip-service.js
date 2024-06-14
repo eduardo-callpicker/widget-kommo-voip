@@ -124,6 +124,8 @@ define([
 		  */
 		this.activeSpeakerKey = 'active-speaker'
 
+		this.doNotDisturbKey = 'do-not-disturb'
+
 		/**
 		  * Initialice all params tha we need
 		  * @returns {Promise}
@@ -285,6 +287,13 @@ define([
 				}
 			}
 
+			// Possible early rejection 
+			if(self.doNotDisturbEnabled()) {
+				console.log("Do Not Disturb enabled, rejecting call.")
+				self.rejectCall(session)
+				return
+			}
+
 			NotificationService.addIncomingCallAudioTag()
 			NotificationService.showIncomingCallModal(callerID)
 			.then(() => {
@@ -297,8 +306,6 @@ define([
 			.catch((e) => {
 				console.error(e)
 				self.rejectCall(session)
-				// Reset de VOIP call menu to prevent unspected changes
-				NotificationService.resetVoipCallMenu()
 			})
 		}
 		
@@ -306,6 +313,12 @@ define([
 		  * Accept the SIP invite and call the actions to update the UI
 		  */
 		this.answerCall = () => {
+			// Check vitals
+			if(self.hasAudioDevice == false) {
+				// TODO add modal for no mic
+				return
+			}
+
 			// Start SIP handling
 			const spdOptions = {
 				sessionDescriptionHandlerOptions: {
@@ -375,6 +388,7 @@ define([
 				})
 			}
 
+			NotificationService.resetVoipCallMenu()
 			self.teardownSipSession()
 		}
 
@@ -455,6 +469,7 @@ define([
 
 			NotificationService.incomingCallModal.destroy()
 			NotificationService.resetVoipCallMenu()
+			self.teardownSipSession()
 		} 
 
 		/**
@@ -602,6 +617,10 @@ define([
 			}
 
 			return activeSpeaker.replace("output-", "")
+		}
+
+		this.doNotDisturbEnabled = () => {
+			return LocalStorageService.get(self.doNotDisturbKey) === 'enabled'
 		}
 
 		return this

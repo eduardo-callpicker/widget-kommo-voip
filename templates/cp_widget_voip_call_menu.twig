@@ -188,7 +188,7 @@
             </div>
             <label for="voip__do-not-disturb">No molestar</label>
             <div class="voip__do-not-disturb-wrapper">
-                <input class="tgl tgl-light" id="voip__do-not-disturb" type="checkbox"/>
+                <input class="tgl tgl-light" id="voip__do-not-disturb" type="checkbox" {% if doNotDisturbEnabled %} checked {% endif %}/>
                 <label class="tgl-btn" for="voip__do-not-disturb">
             </div>
             <button class="voip__call-btn voip__call-settings-btn">

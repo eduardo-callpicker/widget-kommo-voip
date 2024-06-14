@@ -152,12 +152,14 @@ define([
             return new Promise((resolve, reject) => {
                 self.getTemplate('cp_widget_voip_call_menu', template => {
                     const container = $('#page_holder')
-    
-                    container.append(template.render())
+                    container.append(template.render({
+                        doNotDisturbEnabled: LocalStorageService.get('do-not-disturb') === 'enabled'
+                    }))
     
                     $('.voip__call-menu .voip__call-settings-btn').on('click', () => {
                         $('.voip__call-menu .voip__call-settings-options').toggle()
                     })
+                    self.addVoipCallMenuListeners({doNotDisturb: true})
                     resolve(true)
                 })
             })
@@ -283,6 +285,15 @@ define([
                 $(document).off('change', '.voip__call-menu .voip__call-settings-options .voip__speaker-setting', callback)
                 $(document).on('change', '.voip__call-menu .voip__call-settings-options .voip__speaker-setting', callback)
             } 
+
+            if (callbacks.hasOwnProperty('doNotDisturb')) {
+                const callback = (e) => {
+                    const state = $(e.target).is(':checked') ? 'enabled' : 'disabled'
+                    LocalStorageService.set('do-not-disturb', state)
+                }
+                $(document).off('change', '.voip__call-menu #voip__do-not-disturb', callback)
+                $(document).on('change', '.voip__call-menu #voip__do-not-disturb', callback)
+            }
         }   
 
         /**
