@@ -125,17 +125,30 @@ define([
 		this.activeSpeakerKey = 'active-speaker'
 
 		/**
-		  *  Initialice all params tha we need
+		  * Initialice all params tha we need
+		  * @returns {Promise}
 		  */
 		this.init = (context) => {
 			self.context = context
 			NotificationService.init(context)
-			console.log(NotificationService)
-			
-			self.detectDevices()
-			window.setInterval(function(){
-				self.detectDevices()
-			}, 10000);
+
+			return new Promise((resolve, reject) => {
+				navigator.mediaDevices.getUserMedia({ audio: true })
+				.then(stream => {
+					self.detectDevices()
+					window.setInterval(() => {
+						self.detectDevices()
+					}, 10000)
+					resolve()
+				})
+				.catch((e) => {
+					if (e.name === 'NotAllowedError') {
+						reject('Audio permission denied by the user:' + e)
+					} else {
+						reject('Error accessing audio stream:' + e)
+					}
+				}) 
+			})
 		}
 
 		/**
@@ -305,7 +318,6 @@ define([
 		
 			// Configure Audio
 			const currentAudioDevice = self.getActiveAudioInput();
-			console.log(currentAudioDevice)
 			if (currentAudioDevice != "default") {
 				let confirmedAudioDevice = false;
 				for (let i = 0; i < self.audioinputDevices.length; ++i) {
@@ -321,6 +333,9 @@ define([
 					console.warn("The audio device you used before is no longer available, default settings applied.");
 				}
 			}
+
+			self.sipSession.data.audioSourceDevice = self.getActiveAudioInput()
+			self.sipSession.data.audioOutputDevice = self.getActiveSpeaker()
 
 			self.sipSession.accept(spdOptions)
 			const startTime = new Date()
@@ -418,7 +433,6 @@ define([
 				remoteAudio.srcObject = remoteAudioStream
 				remoteAudio.onloadedmetadata = (e) => {
 					const activeAudioOuput = self.getActiveSpeaker()
-					console.log(activeAudioOuput)
 					if (typeof remoteAudio.sinkId !== 'undefined') {
 						remoteAudio.setSinkId(activeAudioOuput).then(function(){
 							console.log("sinkId applied: "+ activeAudioOuput)

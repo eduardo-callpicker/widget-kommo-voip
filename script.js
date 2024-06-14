@@ -1081,9 +1081,14 @@ define([
             }
           });
 
-          NotificationService.initVoipCallMenu().then(() => {
-            VoipService.init(self)
+          NotificationService.initVoipCallMenu()
+          .then(() => {
+            return VoipService.init(self)
+          }).then(() => {
             self.createUserAgent()
+          })
+          .catch(e => {
+            console.error('Error starting VoIP module: ' + e)
           })
         }
 
