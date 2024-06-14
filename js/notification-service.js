@@ -151,7 +151,7 @@ define([
         this.initVoipCallMenu = () => {
             return new Promise((resolve, reject) => {
                 self.getTemplate('cp_widget_voip_call_menu', template => {
-                    const container = $('#page_holder')
+                    const container = $('body')
                     container.append(template.render({
                         doNotDisturbEnabled: LocalStorageService.get('do-not-disturb') === 'enabled'
                     }))
