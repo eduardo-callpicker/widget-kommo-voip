@@ -276,8 +276,8 @@ define([
 			self.sipSession.data = {}
 			self.sipSession.data.src = did
 			self.sipSession.data.calldirection = "inbound"
-			self.sipSession.data.buddyType = '' //TODO: Maybe be contact o lead
-			self.sipSession.data.buddyId = null //TODO: find budfy
+			self.sipSession.data.buddyType = '' //TODO: Maybe be contact or lead
+			self.sipSession.data.buddyId = null //TODO: find buddy
 
 			// Session Delegates
 			self.sipSession.delegate = {
@@ -326,7 +326,7 @@ define([
 		this.answerCall = () => {
 			// Check vitals
 			if(self.hasAudioDevice == false) {
-				// TODO add modal for no mic
+				self.context.showWarningModal('voip_there_is_not_mic')
 				return
 			}
 
@@ -488,7 +488,10 @@ define([
 				console.log("Failed to dispose", es);
 			})
 
-			NotificationService.incomingCallModal.destroy()
+			if (NotificationService.incomingCallModal !== null) {
+				NotificationService.incomingCallModal.destroy()
+			}
+			
 			NotificationService.resetVoipCallMenu()
 			self.teardownSipSession()
 		} 
