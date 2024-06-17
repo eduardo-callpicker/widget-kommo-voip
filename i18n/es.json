@@ -19,11 +19,7 @@
         "cp_unexpected_error": "❌ Intenta de nuevo o consulte a soporte Callpicker",
         "invalid_client": "❌ Credenciales Callpicker Inválidas",
         "unexpected_amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles.",
-        "amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles.",
-        "voip_inbound_call_label": "Llamada entrante Callpicker",
-        "voip_inbound_call_description": "Tienes una llamada entrante de ",
-        "voip_reject_call_label": "Rechazar",
-        "voip_accept_call_label": "Aceptar"
+        "amo_api_error": "❌ Ocurrió un error inesperado al instalar la integración de Kommo, es necesario borrar esta integración y comenzar de nuevo. Consulte la documentación de Callpicker para más detalles."
     },
     "callpickerMessages": {
         "extensions_instructions": "En la siguiente sección se muestran configuraciones adicionales de la integración click-to-call",
@@ -38,6 +34,11 @@
         "ctc_notification_body": "Marcando número",
         "voip_empty_sip_credentials": "Ha ocurrido un error al autenticar la extensión para recepción de llamadas, por favor recargue la página. Si el problema persiste comuníquese con soporte de Callpicker",
         "voip_unespected_api_error": "Ha ocurrido un error inesperado al obtener las credenciales de la extensión. Verifique que la configuración de extensiones sea correcta.",
-        "voip_register_failed": "Error inesperado al conectarse al servidor de voz, recargue la página. Si el problema persiste, contacte a soporte Callpicker."
+        "voip_register_failed": "Error inesperado al conectarse al servidor de voz, recargue la página. Si el problema persiste, contacte a soporte Callpicker.",
+        "voip_inbound_call_label": "Llamada entrante Callpicker",
+        "voip_inbound_call_description": "Tienes una llamada entrante de ",
+        "voip_reject_call_label": "Rechazar",
+        "voip_accept_call_label": "Aceptar",
+        "voip_there_is_not_mic": "No se encuentra dispositivo de entrada de audio"
     }
 }
