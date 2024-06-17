@@ -210,7 +210,6 @@ define([
 		  * This method will be ejecuted when the transport with weboscket is connected to ensure the proper register
 		  */
 		this.onTransportConnected = () => {
-			// TODO: remove this
 			console.log("Connected to Web Socket!")
 		
 			// Reset the ReconnectionAttempts
@@ -257,6 +256,16 @@ define([
 		  * @param {*} session 
 		  */
 		this.receiveCall = session => {
+			// Erly reject the call when the line was ocuped
+			if (self.sipSession !== null) {
+				console.log("Line ocuped, rejecting call.")
+				session.reject({
+					statusCode: 486, 
+					reasonPhrase: "Busy Here"
+				})
+				return
+			}
+
 			let callerID = session.remoteIdentity.displayName
 			const did = session.remoteIdentity.uri.user
 			if (typeof callerID === 'undefined') callerID = did
@@ -304,7 +313,9 @@ define([
 				})
 			})
 			.catch((e) => {
-				console.error(e)
+				if (e !== undefined) {
+					console.error(e)
+				}
 				self.rejectCall(session)
 			})
 		}
