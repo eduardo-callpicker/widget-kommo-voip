@@ -151,19 +151,30 @@ define([
           */
         this.initVoipCallMenu = () => {
             return new Promise((resolve, reject) => {
-                self.getTemplate('cp_widget_voip_call_menu', template => {
-                    const container = $('body')
-                    container.append(template.render({
-                        doNotDisturbEnabled: LocalStorageService.get('do-not-disturb') === 'enabled'
-                    }))
-    
-                    $('.voip__call-menu .voip__call-settings-btn').on('click', () => {
-                        $('.voip__call-menu .voip__call-settings-options').toggle()
+                try {
+                    self.getTemplate('cp_widget_voip_call_menu', template => {
+                        const container = $('body')
+                        container.append(template.render({
+                            doNotDisturbEnabled: LocalStorageService.get('do-not-disturb') === 'enabled'
+                        }))
+        
+                        $('.voip__call-menu .voip__call-settings-btn').on('click', () => {
+                            $('.voip__call-menu .voip__call-settings-options').toggle()
+                        })
+                        self.addVoipCallMenuListeners({doNotDisturb: true})
+                        resolve(true)
                     })
-                    self.addVoipCallMenuListeners({doNotDisturb: true})
-                    resolve(true)
-                })
+                } catch (error) {
+                    reject(error)
+                }
             })
+        }
+
+        /**
+          * Removes VoIP call menu from the DOM. This functions aspects to be used when the VoIP module was not initiated
+          */
+        this.destroyVoipCallMenu = () => {
+            $('.voip__call-menu').remove()
         }
 
         /**

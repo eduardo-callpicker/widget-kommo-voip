@@ -970,65 +970,81 @@ define([
     }
 
     /**
-     * Get Callpicker SIP credentials form ConnectorsService
+     * Get Callpicker SIP credentials form ConnectorsService or LocalStorage if exists
      * 
-     * @returns {JSON|null}
+     * @returns {Promise<object>}
      */
-    self.getCallpickerExtensionSipCredentials = async function() {
-      const kommoUserId = self.system().amouser_id
-      const extensionId = self.searchUserCallpickerExtension(kommoUserId)
-      let userExtensionSipCredentials = null
+    self.getCallpickerExtensionSipCredentials = function() {
+      return new Promise((resolve, reject) => {
+        const kommoUserId = self.system().amouser_id
+        const extensionId = self.searchUserCallpickerExtension(kommoUserId)
 
-      if (extensionId === false) {
-        self.showWarningModal('ctc_empty_extension')
-        return userExtensionSipCredentials
-      }
-
-      if(LocalStorageService.exists(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)) {
-        userExtensionSipCredentials = LocalStorageService.get(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)
-      } else {
-        const payload = {
-          cp_extension_id: extensionId,
-          cp_client_id: self.params.cp_client_id,
-          cp_client_secret: self.params.cp_client_secret
+        if (extensionId === false) {
+          self.showWarningModal('ctc_empty_extension')
+          reject()
         }
 
-        try {
-          userExtensionSipCredentials = await ConnectorsService.getExtensionSipCredentials(payload);
-
-          LocalStorageService.set(
-            self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS,
-            userExtensionSipCredentials
-          )
-        } catch (error) {
-          if (error.message) {
-            const modalData = self.modalWarningBuilder(error.message)
-            self.renderBasicModal(modalData)
-          } else {
-            self.showWarningModal('voip_unespected_api_error')
+        if(LocalStorageService.exists(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)) {
+          userExtensionSipCredentials = LocalStorageService.get(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)
+          resolve(userExtensionSipCredentials)
+        } else {
+          const payload = {
+            cp_extension_id: extensionId,
+            cp_client_id: self.params.cp_client_id,
+            cp_client_secret: self.params.cp_client_secret
           }
+  
+          ConnectorsService.getExtensionSipCredentials(payload)
+          .then(response => {
+            LocalStorageService.set(
+              self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS,
+              response
+            )
+            resolve(response)
+          })
+          .catch(error => {
+            if (error.message) {
+              const modalData = self.modalWarningBuilder(error.message)
+              self.renderBasicModal(modalData)
+            } else {
+              self.showWarningModal('voip_unespected_api_error')
+            }
+            reject()
+          });
         }
-      }
-      // TODO: Remove this
-      console.log(userExtensionSipCredentials)
-      return userExtensionSipCredentials
+      })
     }
 
     /**
      * Get SIP credentials for current user on sesion and try to create SIP Agent 
+     * @returns {Promise}
      */
-    self.createUserAgent = async function() {
-      userExtensionSipCredentials = await self.getCallpickerExtensionSipCredentials()
+    self.createUserAgent = function(userExtensionSipCredentials) {
+      return new Promise((resolve, reject) => {
+        if(userExtensionSipCredentials === null) {
+          self.showWarningModal('voip_empty_sip_credentials')
+          reject(self.getCallpickerMessages('voip_empty_sip_credentials'))
+        } else {
+          VoipService.profileName = self.system().amouser
+          VoipService.sipUserName = userExtensionSipCredentials.username
+          VoipService.sipPassword = userExtensionSipCredentials.password
+          VoipService.createUserAgent()
 
-      if(userExtensionSipCredentials === null) {
-        self.showWarningModal('voip_empty_sip_credentials')
-        return
-      }
-
-      VoipService.profileName = self.system().amouser
-      VoipService.sipUserName = userExtensionSipCredentials.username
-      VoipService.sipPassword = userExtensionSipCredentials.password
-      VoipService.createUserAgent()
+          let registerAwaitTime = 10000 // 10 seconds
+          const awaitUserAgentRegistration = window.setInterval(() => {
+            if (VoipService.userAgent && VoipService.userAgent.isRegistered) {
+              window.clearInterval(awaitUserAgentRegistration)
+              resolve(true)
+            }
+						
+            registerAwaitTime -= 1000
+            if (registerAwaitTime <= 0) {
+              window.clearInterval(awaitUserAgentRegistration)
+              reject(self.getCallpickerMessages('voip_register_failed'))
+            }
+					}, 1000)
+        }
+      })
     }
 
     /**
@@ -1071,24 +1087,25 @@ define([
           }
         })
 
-        // TODO: Validate if inbout calls function was enabled before this
         if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
-
-          APP.widgets.notificationsPhone({
-            ns: self.ns,
-            click: function() {
-              NotificationService.toggleVoipCallMenu()
-            }
-          });
-
-          NotificationService.initVoipCallMenu()
+          self.getCallpickerExtensionSipCredentials()
+          .then(userExtensionSipCredentials => self.createUserAgent(userExtensionSipCredentials))
+          .then(() => NotificationService.initVoipCallMenu())
+          .then(() => VoipService.init(self))
           .then(() => {
-            return VoipService.init(self)
-          }).then(() => {
-            self.createUserAgent()
+            APP.widgets.notificationsPhone({
+              ns: self.ns,
+              click: function() {
+                NotificationService.toggleVoipCallMenu()
+              }
+            })
           })
           .catch(e => {
-            console.error('Error starting VoIP module: ' + e)
+            if (e !== undefined) {
+              console.warn('Error starting VoIP module: ', e)
+            }
+
+            NotificationService.destroyVoipCallMenu()
           })
         }
 
