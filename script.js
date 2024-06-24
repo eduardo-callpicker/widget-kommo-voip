@@ -991,7 +991,8 @@ define([
           const payload = {
             cp_extension_id: extensionId,
             cp_client_id: self.params.cp_client_id,
-            cp_client_secret: self.params.cp_client_secret
+            cp_client_secret: self.params.cp_client_secret,
+            cp_api_host: self.WIDGET_CP.API_HOST,
           }
   
           ConnectorsService.getExtensionSipCredentials(payload)
