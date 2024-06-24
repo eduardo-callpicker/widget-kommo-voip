@@ -1,3 +1,4 @@
 _old/
-
 *.zip
+.vscode
+.DS_Store

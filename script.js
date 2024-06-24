@@ -1,10 +1,19 @@
 define([
   'jquery',
   'underscore',
-  'lib/components/base/modal'
-], function ($, _, Modal) {
+  'lib/components/base/modal',
+  './js/localstorage-service.js',
+  './js/connectors-service.js',
+  './js/voip-service.js',
+  './js/notification-service.js'
+], function ($, _, Modal, LocalStorageService, ConnectorsService, VoipService, NotificationService) {
 
   var CustomWidget = function () {
+    /*------------------------------------
+      Set Context on the services
+     -------------------------------------*/
+    ConnectorsService.context = this
+    NotificationService.context = this
 
     /*------------------------------------
       WIDGET INFORMATION
@@ -16,12 +25,12 @@ define([
     WIDGET GENERAL CONSTANTS
     ------------------------------------*/
 
-    self.CP_WIDGET_HOST = 'https://connectors.callpicker.com/integrations/amocrm/widget'
+    self.CP_WIDGET_HOST = 'https://connectors6.black.digitum.com.mx/amocrm/widget'
     self.CP_WIDGET_TYPE = 'click_to_call'
     self.MODAL_HTML = '<span class="modal-body__close"><span class="icon icon-modal-close"></span></span>'
 
     self.WIDGET_CP = {
-      API_HOST: "https://api.callpicker.com",
+      API_HOST: "https://black.digitum.com.mx/jafet/callpicker_api/api_develop",
       API_SCOPE: "calls",
       CODES: {
         SUCCESS: 200,
@@ -44,6 +53,11 @@ define([
       "ctc_ttl": "1",
       "ctc_period": "1",
       "ctc_random": "0"
+    }
+
+    self.STORAGE_KEYS = {
+      CP_API_CREDENTIALS: 'callpicker.api.credentials',
+      CP_EXTENSION_SIP_CREDENTIALS: 'callpicker.extensionsip.credentials'
     }
 
     /*------------------------------------
@@ -939,6 +953,102 @@ define([
     }
 
     /**
+     * Stores Callpicker API credentials on local storage
+     */
+    self.storeCallpickerApiCredentials = function() {
+      const credentials = {
+        client_id: $(`input[name="${self.WIDGET_FIELDS.CP_CLIENT_ID}"]`).val(),
+        client_secret: $(`input[name="${self.WIDGET_FIELDS.CP_CLIENT_SECRET}"]`).val()
+      }
+
+      if(LocalStorageService.exists(self.STORAGE_KEYS.CP_API_CREDENTIALS)) {
+        LocalStorageService.update(self.STORAGE_KEYS.CP_API_CREDENTIALS, credentials)
+        return
+      }
+
+      LocalStorageService.set(self.STORAGE_KEYS.CP_API_CREDENTIALS, credentials)
+    }
+
+    /**
+     * Get Callpicker SIP credentials form ConnectorsService or LocalStorage if exists
+     * 
+     * @returns {Promise<object>}
+     */
+    self.getCallpickerExtensionSipCredentials = function() {
+      return new Promise((resolve, reject) => {
+        const kommoUserId = self.system().amouser_id
+        const extensionId = self.searchUserCallpickerExtension(kommoUserId)
+
+        if (extensionId === false) {
+          self.showWarningModal('ctc_empty_extension')
+          reject()
+        }
+
+        if(LocalStorageService.exists(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)) {
+          userExtensionSipCredentials = LocalStorageService.get(self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS)
+          resolve(userExtensionSipCredentials)
+        } else {
+          const payload = {
+            cp_extension_id: extensionId,
+            cp_client_id: self.params.cp_client_id,
+            cp_client_secret: self.params.cp_client_secret,
+            cp_api_host: self.WIDGET_CP.API_HOST,
+          }
+  
+          ConnectorsService.getExtensionSipCredentials(payload)
+          .then(response => {
+            LocalStorageService.set(
+              self.STORAGE_KEYS.CP_EXTENSION_SIP_CREDENTIALS,
+              response
+            )
+            resolve(response)
+          })
+          .catch(error => {
+            if (error.message) {
+              const modalData = self.modalWarningBuilder(error.message)
+              self.renderBasicModal(modalData)
+            } else {
+              self.showWarningModal('voip_unespected_api_error')
+            }
+            reject()
+          });
+        }
+      })
+    }
+
+    /**
+     * Get SIP credentials for current user on sesion and try to create SIP Agent 
+     * @returns {Promise}
+     */
+    self.createUserAgent = function(userExtensionSipCredentials) {
+      return new Promise((resolve, reject) => {
+        if(userExtensionSipCredentials === null) {
+          self.showWarningModal('voip_empty_sip_credentials')
+          reject(self.getCallpickerMessages('voip_empty_sip_credentials'))
+        } else {
+          VoipService.profileName = self.system().amouser
+          VoipService.sipUserName = userExtensionSipCredentials.username
+          VoipService.sipPassword = userExtensionSipCredentials.password
+          VoipService.createUserAgent()
+
+          let registerAwaitTime = 10000 // 10 seconds
+          const awaitUserAgentRegistration = window.setInterval(() => {
+            if (VoipService.userAgent && VoipService.userAgent.isRegistered) {
+              window.clearInterval(awaitUserAgentRegistration)
+              resolve(true)
+            }
+						
+            registerAwaitTime -= 1000
+            if (registerAwaitTime <= 0) {
+              window.clearInterval(awaitUserAgentRegistration)
+              reject(self.getCallpickerMessages('voip_register_failed'))
+            }
+					}, 1000)
+        }
+      })
+    }
+
+    /**
      * widgetClickToCall
      */
 
@@ -978,9 +1088,32 @@ define([
           }
         })
 
+        if (self.params.status == self.WIDGET_STATUS.INSTALLED) {
+          self.getCallpickerExtensionSipCredentials()
+          .then(userExtensionSipCredentials => self.createUserAgent(userExtensionSipCredentials))
+          .then(() => NotificationService.initVoipCallMenu())
+          .then(() => VoipService.init(self))
+          .then(() => {
+            APP.widgets.notificationsPhone({
+              ns: self.ns,
+              click: function() {
+                NotificationService.toggleVoipCallMenu()
+              }
+            })
+          })
+          .catch(e => {
+            if (e !== undefined) {
+              console.warn('Error starting VoIP module: ', e)
+            }
+
+            NotificationService.destroyVoipCallMenu()
+          })
+        }
+
         return true
       },
       bind_actions: function () {
+        console.log('ws')
         return true
       },
       settings: async function ($modal_body) {
@@ -1001,9 +1134,9 @@ define([
       },
       onSave: async function () {
         if (self.params.status === self.WIDGET_STATUS.INSTALL) {
-
-
           const resultAuthorization = await self.widgetAuthorization()
+
+          self.storeCallpickerApiCredentials()
 
           return resultAuthorization
         }
